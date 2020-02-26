@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Infra.Eevents;
+using Domain;
 
 namespace Infra.Events
 {
@@ -16,7 +17,7 @@ namespace Infra.Events
             _container = container;
         }
 
-        public async Task Execute<TEvent>(TEvent @event, CancellationToken cancellationToken = default(CancellationToken)) where TEvent : Event
+        public async Task Execute<TEvent>(TEvent @event, CancellationToken cancellationToken = default) where TEvent : Event
         {
             var handlerType = typeof(IEventHandler<>).MakeGenericType(@event.GetType());
             var handlersType = typeof(IEnumerable<>).MakeGenericType(handlerType);

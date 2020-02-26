@@ -1,4 +1,4 @@
-﻿using Infra.Events;
+﻿using Domain;
 using System.Threading.Tasks;
 
 namespace Infra.Events
