@@ -1,10 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 
 namespace Infra.Queries
 {
+    public class CacheIgnoreAttribute : Attribute
+    {
+    }
+
     public abstract class CacheableQuery<TQuery, TResult> : IQueryResult<TResult>
     {
         /// <summary>
@@ -17,46 +21,26 @@ namespace Infra.Queries
         /// </summary>
         public virtual TimeSpan? SlidingExpiration => TimeSpan.FromDays(1);
 
-        public virtual string GetKey() => $"{this.GetType().FullName}.{this.GetKeyInternal()}";
-
-        private string GetKeyInternal()
+        public virtual string GetKey()
         {
-            var fields = GetFields();
+            var typeInfo = GetType();
+            var props = typeInfo
+                .GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                .Where(p => p.GetCustomAttribute<CacheIgnoreAttribute>() == null);
 
-            if (!fields.Any())
+            if (!props.Any())
             {
-                return this.GetType().FullName;
+                return typeInfo.FullName;
             }
 
-            const int startValue = 17, multiplier = 59;
-            int hashCode = startValue;
+            var sb = new StringBuilder(typeInfo.FullName);
 
-            foreach (var field in fields)
+            foreach (var property in props)
             {
-                object value = field.GetValue(this);
-
-                if (value != null)
-                {
-                    hashCode = ( hashCode * multiplier ) + value.GetHashCode();
-                }
+                sb.Append($"&{property.Name}={property.GetValue(this)}");
             }
 
-            return hashCode.ToString();
-        }
-
-        private IEnumerable<FieldInfo> GetFields()
-        {
-            var t = GetType();
-            var fields = new List<FieldInfo>();
-
-            while (t != typeof(object))
-            {
-                fields.AddRange(t.GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public));
-
-                t = t.BaseType;
-            }
-
-            return fields;
+            return sb.ToString();
         }
     }
 }

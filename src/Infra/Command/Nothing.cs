@@ -6,9 +6,7 @@
         {
         }
 
-        private static readonly Nothing _instance = new Nothing();
-
-        public static Nothing Instance { get; } = _instance;
+        public static Nothing Instance { get; } = new Nothing();
         public override string ToString() => string.Empty;
     }
 }
