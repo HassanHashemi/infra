@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Infra.Common.Decorators
@@ -20,7 +19,7 @@ namespace Infra.Common.Decorators
             _logger = logger;
         }
 
-        public async Task<CommandResult<TResult>> HandleAsync(TCommand command)
+        public async Task<TResult> HandleAsync(TCommand command)
         {
             var timer = new Stopwatch();
 

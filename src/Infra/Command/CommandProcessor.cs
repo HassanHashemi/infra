@@ -12,7 +12,7 @@ namespace Infra.Commands
             _container = container;
         }
 
-        public Task<CommandResult<TResult>> ExecuteAsync<TCommand, TResult>(TCommand command)
+        public Task<TResult> ExecuteAsync<TCommand, TResult>(TCommand command)
         {
             var handlerType = typeof(ICommandHandler<,>)
                 .MakeGenericType(command.GetType(), typeof(TResult));

@@ -15,7 +15,7 @@ namespace Infra.Common.Decorators
             _validator = validator;
         }
 
-        public async Task<CommandResult<TResult>> HandleAsync(TCommand command)
+        public async Task<TResult> HandleAsync(TCommand command)
         {
             await _validator.ValidateAsync(command);
             return await _decoratedHandler.HandleAsync(command);
