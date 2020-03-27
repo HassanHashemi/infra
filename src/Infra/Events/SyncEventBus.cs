@@ -21,7 +21,7 @@ namespace Infra.Events
         {
             var handlerType = typeof(IEventHandler<>).MakeGenericType(@event.GetType());
             var handlersType = typeof(IEnumerable<>).MakeGenericType(handlerType);
-            dynamic handlers = this._container.ResolveKeyed("1", handlersType);
+            dynamic handlers = _container.ResolveKeyed("1", handlersType);
 
             var exceptions = new List<Exception>();
 

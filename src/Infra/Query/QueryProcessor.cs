@@ -10,7 +10,7 @@ namespace Infra.Queries
 
         public QueryProcessor(ILifetimeScope container)
         {
-            this._container = container;
+            _container = container;
         }
 
         [DebuggerStepThrough]

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Infra.Common.Decorators
 {
     public class QueryLoggerDecorator<TQuery, TResult>
-     : IQueryHandler<TQuery, TResult> where TQuery : IQueryResult<TResult>
+        : IQueryHandler<TQuery, TResult> where TQuery : IQueryResult<TResult>
     {
         private readonly ILogger<QueryLoggerDecorator<TQuery, TResult>> _logger;
         private readonly IQueryHandler<TQuery, TResult> _inner;

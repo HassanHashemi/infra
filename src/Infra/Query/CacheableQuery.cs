@@ -5,10 +5,6 @@ using System.Text;
 
 namespace Infra.Queries
 {
-    public class CacheIgnoreAttribute : Attribute
-    {
-    }
-
     public abstract class CacheableQuery<TQuery, TResult> : IQueryResult<TResult>
     {
         /// <summary>
@@ -26,7 +22,7 @@ namespace Infra.Queries
             var typeInfo = GetType();
             var props = typeInfo
                 .GetProperties(BindingFlags.Instance | BindingFlags.Public)
-                .Where(p => p.GetCustomAttribute<CacheIgnoreAttribute>() == null);
+                .Where(p => p.GetCustomAttribute<CacheKeyIgnoreAttribute>() == null);
 
             if (!props.Any())
             {
