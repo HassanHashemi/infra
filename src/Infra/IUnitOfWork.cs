@@ -5,6 +5,6 @@ namespace Infra.Events
 {
     public interface IUnitOfWork
     {
-        Task SaveAsync(AggregateRoot root);
+        Task<int> Save(AggregateRoot root);
     }
 }

@@ -13,6 +13,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{1C80
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sample01", "samples\Sample01\Sample01.csproj", "{A476C720-722D-4199-AC5E-BCEA7C485131}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infra.EFCore", "src\Infra.EFCore\Infra.EFCore.csproj", "{B9F70857-A00E-47E2-A31B-1A77FD6E2503}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -31,6 +33,10 @@ Global
 		{A476C720-722D-4199-AC5E-BCEA7C485131}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A476C720-722D-4199-AC5E-BCEA7C485131}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A476C720-722D-4199-AC5E-BCEA7C485131}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B9F70857-A00E-47E2-A31B-1A77FD6E2503}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B9F70857-A00E-47E2-A31B-1A77FD6E2503}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B9F70857-A00E-47E2-A31B-1A77FD6E2503}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B9F70857-A00E-47E2-A31B-1A77FD6E2503}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -39,6 +45,7 @@ Global
 		{8A76DBAC-5A20-4F42-8B76-9B42A47558D6} = {6E3DD5B0-80C1-40CE-963C-4274417D14CE}
 		{5BF5CC8D-A2A2-4731-BDC3-20AB785EDB00} = {6E3DD5B0-80C1-40CE-963C-4274417D14CE}
 		{A476C720-722D-4199-AC5E-BCEA7C485131} = {1C8030D6-32AA-494C-8AA9-5866BC7C7CA3}
+		{B9F70857-A00E-47E2-A31B-1A77FD6E2503} = {6E3DD5B0-80C1-40CE-963C-4274417D14CE}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E81D39DB-ADF0-420F-AF1C-70B9FCAC58B6}
