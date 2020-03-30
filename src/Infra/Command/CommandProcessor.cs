@@ -19,7 +19,7 @@ namespace Infra.Commands
 
             dynamic handler = _container.ResolveKeyed("3", handlerType);
 
-            return handler;
+            return handler.HandleAsync(command);
         }
     }
 }

@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Infra.Common.Decorators\Infra.Common.Decorators.csproj" />
     <ProjectReference Include="..\..\src\Infra\Infra.csproj" />
   </ItemGroup>
 
