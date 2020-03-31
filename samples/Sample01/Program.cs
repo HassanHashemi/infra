@@ -141,13 +141,12 @@ namespace Sample01
             //await store.Commit(user);
             //var services = new ServiceCollection().AddLogging(x => x.AddConsole());
             var builder = new ContainerBuilder();
-            
+
             AddCommandQuery(builder, typeof(Program).Assembly);
             var provider = builder.Build();
             var processor = provider.Resolve<ICommandProcessor>();
             var result = processor.ExecuteAsync<TestCommand, string>(new TestCommand()).Result;
         }
-
 
         public static ContainerBuilder AddCommandQuery(this ContainerBuilder builder, params Assembly[] scannedAssemblies)
         {

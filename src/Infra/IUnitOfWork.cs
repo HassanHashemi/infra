@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Domain;
 
-namespace Infra.Events
+namespace Infra
 {
     public interface IUnitOfWork
     {

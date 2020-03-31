@@ -1,5 +1,4 @@
 ﻿using Domain;
-using Infra.Eevents;
 using Infra.Events;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -29,7 +28,7 @@ namespace Infra.EFCore
 
         public async Task<int> Save(AggregateRoot root)
         {
-            int rowCount = 0;
+            int rowCount;
 
             try
             {
