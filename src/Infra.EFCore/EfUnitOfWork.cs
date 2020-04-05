@@ -24,7 +24,7 @@ namespace Infra.EFCore
         }
 
         public DbContext Context { get; }
-        public IGenericRepository<T> Repo<T>() where T : class => new EfGenericRepo<T>(Context);
+        public IGenericRepository<T> GenericRepo<T>() where T : class => new EfGenericRepo<T>(Context);
 
         public async Task<int> Save(AggregateRoot root)
         {
