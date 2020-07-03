@@ -1,5 +1,4 @@
 ﻿using Domain;
-using Infra.Events;
 using System.Threading;
 using System.Threading.Tasks;
 

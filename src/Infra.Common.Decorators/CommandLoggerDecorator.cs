@@ -19,7 +19,7 @@ namespace Infra.Common.Decorators
             _logger = logger;
         }
 
-        public async Task<TResult> HandleAsync(TCommand command)
+        public virtual async Task<TResult> HandleAsync(TCommand command)
         {
             var timer = new Stopwatch();
 

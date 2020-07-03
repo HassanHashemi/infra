@@ -2,8 +2,8 @@
 
 namespace Infra
 {
-    public interface IExecutionContext
+    public interface IExecutionContext<TUser> where TUser : class
     {
-        ValueTask<IUser> User();
+        ValueTask<TUser> User();
     }
 }

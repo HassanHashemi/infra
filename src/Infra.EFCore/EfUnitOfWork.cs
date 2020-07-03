@@ -1,5 +1,5 @@
 ﻿using Domain;
-using Infra.Events;
+using Infra.Eevents;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
@@ -9,16 +9,16 @@ namespace Infra.EFCore
 {
     public sealed class EfUnitOfWork : IUnitOfWork
     {
-        private readonly SyncEventBus _localEventBus;
+        private readonly IEventBus _eventBus;
         private readonly ILogger<EfUnitOfWork> _logger;
 
         public EfUnitOfWork(
             DbContext context,
-            SyncEventBus localBus,
+            IEventBus eventBus,
             ILogger<EfUnitOfWork> logger)
         {
             _logger = logger;
-            _localEventBus = localBus;
+            _eventBus = eventBus;
 
             Context = context;
         }
@@ -42,22 +42,22 @@ namespace Infra.EFCore
 
             foreach (var item in root.UncommittedChanges)
             {
-                await TryExecuteLocal(item);
+                await DispatchEvents(item);
             }
 
             return rowCount;
         }
 
-        private async Task TryExecuteLocal(Event item)
+        private async Task DispatchEvents(Event item)
         {
-            if (this._localEventBus == null)
+            if (_eventBus == null)
             {
                 return;
             }
 
             try
             {
-                await this._localEventBus.Execute(item);
+                await _eventBus.Execute(item);
             }
             catch (Exception ex)
             {
