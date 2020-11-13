@@ -1,20 +1,12 @@
 ﻿using Autofac;
-using Domain;
 using Infra.Commands;
 using Infra.Common.Decorators;
 using Infra.Events;
 using Infra.Events.Kafka;
 using Infra.Queries;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using News.Domain;
-using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Sample01
@@ -41,6 +33,7 @@ namespace Sample01
             });
 
             await bus.Execute(new UserCreated(Guid.NewGuid(), "Hasasn Hashemi"));
+            Console.ReadKey();
 
             //var options = Options.Create(new EventStoreConfig()
             //{
