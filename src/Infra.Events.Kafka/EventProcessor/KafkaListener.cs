@@ -14,7 +14,7 @@ namespace Infra.Events.Kafka
         private readonly ILogger<KafkaListenerService> _logger;
         private readonly SubscriberConfig _config;
         private readonly KafkaListenerCallbacks _callbacks;
-
+        
         public KafkaListener(
             ILogger<KafkaListenerService> logger,
             KafkaListenerCallbacks callbacks,
@@ -45,8 +45,9 @@ namespace Infra.Events.Kafka
         {
             using (var consumer = new ConsumerBuilder<Ignore, string>(ConsumerConfig).Build())
             {
+                Console.WriteLine("before subscribe");
                 consumer.Subscribe(this._config.Topics);
-                
+                Console.WriteLine("after sub");
                 while (_consuming)
                 {
                     try

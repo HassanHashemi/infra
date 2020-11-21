@@ -1,5 +1,6 @@
 ﻿using Confluent.Kafka;
-using System;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
 
 namespace Infra.Events.Kafka
 {
@@ -7,9 +8,6 @@ namespace Infra.Events.Kafka
     {
         public string[] Topics { get; set; }
         public string BootstrappServers { get; set; }
-#if DEBUG
-            = "localhost:9092";
-#endif
         public string GroupId { get; set; }
         public AutoOffsetReset OffsetResetType { get; set; } = AutoOffsetReset.Earliest;
 
@@ -17,7 +15,10 @@ namespace Infra.Events.Kafka
         {
             get
             {
-                return this.Topics.ContainsElement()
+                return 
+                    this.Topics != null
+                    &&
+                    this.Topics.Any()
                     &&
                     !string.IsNullOrEmpty(this.BootstrappServers)
                     &&

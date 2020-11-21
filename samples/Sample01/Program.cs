@@ -1,4 +1,6 @@
-﻿using Autofac;
+﻿using Aota.SmppGateway.DataModel;
+using Autofac;
+using Domain;
 using Infra.Commands;
 using Infra.Common.Decorators;
 using Infra.Events;
@@ -8,6 +10,14 @@ using News.Domain;
 using System;
 using System.Reflection;
 using System.Threading.Tasks;
+
+namespace Aota.SmppGateway.DataModel
+{
+    public class SmppGatewayMessage : Event
+    {
+         public string Value { get; set; }
+    }
+}
 
 namespace Sample01
 {
@@ -32,8 +42,7 @@ namespace Sample01
                 BootstrapServers = "10.51.12.36:30029"
             });
 
-            await bus.Execute(new UserCreated(Guid.NewGuid(), "Hasasn Hashemi"));
-            Console.ReadKey();
+            await bus.Execute(new SmppGatewayMessage { Value = "akbar" });
 
             //var options = Options.Create(new EventStoreConfig()
             //{
