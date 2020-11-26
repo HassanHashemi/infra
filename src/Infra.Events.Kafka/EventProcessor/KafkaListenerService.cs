@@ -71,6 +71,7 @@ namespace Infra.Events.Kafka
         {
             return base.StopAsync(cancellationToken);
         }
+
         private Task OnMessageReceived(BusMessageReceivedArgs e) => _callbacks.Invoke(this, e);
 
         private ConsumerConfig ConsumerConfig => new ConsumerConfig
