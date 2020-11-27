@@ -27,6 +27,19 @@ namespace Infra.Events.Kafka
             }).Build();
         }
 
+        public Task Execute(string topic, Event @event, CancellationToken cancellationToken = default)
+        {
+            Guard.NotNull(topic, nameof(topic));
+            Guard.NotNull(@event, nameof(@event));
+
+            var message = new Message<Null, string>
+            {
+                Value = JsonConvert.SerializeObject(@event)
+            };
+
+            return _producer.ProduceAsync(topic, message, cancellationToken);
+        }
+
         public Task Execute<TEvent>(TEvent @event, CancellationToken cancellationToken = default) where TEvent : Event
         {
             Guard.NotNull(@event, nameof(@event));
