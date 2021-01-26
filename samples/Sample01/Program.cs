@@ -6,16 +6,19 @@ using Infra.Common.Decorators;
 using Infra.Events;
 using Infra.Events.Kafka;
 using Infra.Queries;
+using Microsoft.Extensions.Hosting;
 using News.Domain;
 using System;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Aota.SmppGateway.DataModel
 {
     public class SmppGatewayMessage : Event
     {
-         public string Value { get; set; }
+        public string Value { get; set; }
     }
 }
 
@@ -33,16 +36,75 @@ namespace Sample01
         public Guid UserId { get; set; }
     }
 
+    public class TestHandler : MessageHandler
+    {
+        public TestHandler(KafkaListenerCallbacks callbacks) : base(callbacks)
+        {
+        }
+
+        protected override Task MessageReceived(BusMessageReceivedArgs e)
+        {
+            Console.WriteLine(e);
+
+            return Task.CompletedTask;
+        }
+    }
+
+    public class LoggerService : BackgroundService
+    {
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        {
+            while(true)
+            {
+                await Task.Delay(3_000);
+                Console.WriteLine("**************************************");
+                Console.WriteLine("**************************************");
+                Console.WriteLine("**************************************");
+                Console.WriteLine("**************************************");
+                Console.WriteLine("**************************************");
+            }
+        }
+    }
     public static class Program
     {
         static async Task Main(string[] args)
         {
-            var bus = new KafkaEventBus(new KafkaProducerConfig
+            _ = Task.Run(async () =>
             {
-                BootstrapServers = "10.51.12.36:30029"
+                while (true)
+                {
+                    await Task.Delay(3_000);
+
+                    var bus = new KafkaEventBus(new KafkaProducerConfig
+                    {
+                        BootstrapServers = "10.51.12.36:30029"
+                    });
+
+                    await bus.Execute(new UserCreated(Guid.NewGuid(), "Hassan"));
+                }
             });
 
-            await bus.Execute(new SmppGatewayMessage { Value = "akbar" });
+            Host.CreateDefaultBuilder()
+              .ConfigureServices((context, services) =>
+              {
+                  services.AddMessageHandler<TestHandler>();
+                  services.AddHostedService<LoggerService>();
+                  services.AddKafka(
+                    p =>
+                    {
+                        p.BootstrapServers = "10.51.12.36:30029";
+                    },
+                    r =>
+                    {
+                        r.GroupId = "Campaign.Core";
+                        r.BootstrappServers = "10.51.12.36:30029";
+                        r.Topics = new[] { typeof(UserCreated).FullName }; // File.ReadAllLines("/storage/scenario/topics.txt");
+                    });
+              })
+              .Build()
+              .Run();
+
+          
 
             //var options = Options.Create(new EventStoreConfig()
             //{
