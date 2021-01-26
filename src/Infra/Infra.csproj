@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ArgsValidation" Version="0.0.1" />
+    <PackageReference Include="ArgsValidation" Version="0.0.2" />
     <PackageReference Include="EventStore.Client" Version="5.0.8" />
     <PackageReference Include="Autofac" Version="5.1.4" />
     <PackageReference Include="DDDHelpers" Version="1.0.8" />
