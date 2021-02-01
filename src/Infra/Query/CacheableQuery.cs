@@ -22,7 +22,8 @@ namespace Infra.Queries
             var typeInfo = GetType();
             var props = typeInfo
                 .GetProperties(BindingFlags.Instance | BindingFlags.Public)
-                .Where(p => p.GetCustomAttribute<CacheKeyIgnoreAttribute>() == null);
+                .Where(p => p.GetCustomAttribute<CacheKeyIgnoreAttribute>() == null)
+                .OrderByDescending(t => t.Name);
 
             if (!props.Any())
             {

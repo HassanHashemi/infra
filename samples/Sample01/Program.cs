@@ -54,10 +54,10 @@ namespace Sample01
     {
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            while(true)
+            while (true)
             {
                 await Task.Delay(3_000);
-                Console.WriteLine("**************************************");
+                Console. WriteLine("**************************************");
                 Console.WriteLine("**************************************");
                 Console.WriteLine("**************************************");
                 Console.WriteLine("**************************************");
@@ -67,7 +67,7 @@ namespace Sample01
     }
     public static class Program
     {
-        static async Task Main(string[] args)
+        public static async Task Main(string[] args)
         {
             _ = Task.Run(async () =>
             {
@@ -104,7 +104,7 @@ namespace Sample01
               .Build()
               .Run();
 
-          
+
 
             //var options = Options.Create(new EventStoreConfig()
             //{
