@@ -1,5 +1,4 @@
-﻿using Aota.SmppGateway.DataModel;
-using Autofac;
+﻿using Autofac;
 using Domain;
 using Infra.Commands;
 using Infra.Common.Decorators;
@@ -13,14 +12,25 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using Aota.Gateway.Models;
 
-namespace Aota.SmppGateway.DataModel
+namespace Aota.Gateway.Models
 {
-    public class SmppGatewayMessage : Event
+    /// <summary>
+    /// Instantiated when a message is received from a scenario
+    /// </summary>
+    public class CloseHttpSessionGatewayMessage : Event
     {
-        public string Value { get; set; }
     }
+
+    public class HttpGatewayMessage : Event { }
+    public class HttpGatewayMessageReceived : Event { }
+    public class HttpSessionStartedGatewayMessage : Event { }
+    public class SmppGatewayMessage : Event { }
+    public class SmppGatewayMessageReceived : Event { }
+    public class StartGatewayMessage : Event { }
 }
+
 
 namespace Sample01
 {
@@ -57,7 +67,7 @@ namespace Sample01
             while (true)
             {
                 await Task.Delay(3_000);
-                Console. WriteLine("**************************************");
+                Console.WriteLine("**************************************");
                 Console.WriteLine("**************************************");
                 Console.WriteLine("**************************************");
                 Console.WriteLine("**************************************");
@@ -69,20 +79,19 @@ namespace Sample01
     {
         public static async Task Main(string[] args)
         {
-            _ = Task.Run(async () =>
+            var bus = new KafkaEventBus(new KafkaProducerConfig
             {
-                while (true)
-                {
-                    await Task.Delay(3_000);
-
-                    var bus = new KafkaEventBus(new KafkaProducerConfig
-                    {
-                        BootstrapServers = "10.51.12.36:30029"
-                    });
-
-                    await bus.Execute(new UserCreated(Guid.NewGuid(), "Hassan"));
-                }
+                BootstrapServers = "kafka:9092"
             });
+
+            await bus.Execute(new HttpGatewayMessage());
+            await bus.Execute(new HttpGatewayMessageReceived());
+            await bus.Execute(new CloseHttpSessionGatewayMessage());
+            await bus.Execute(new HttpSessionStartedGatewayMessage());
+            await bus.Execute(new SmppGatewayMessage());
+            await bus.Execute(new StartGatewayMessage());
+
+            return;
 
             Host.CreateDefaultBuilder()
               .ConfigureServices((context, services) =>
