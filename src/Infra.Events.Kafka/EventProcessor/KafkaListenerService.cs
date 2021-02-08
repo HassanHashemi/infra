@@ -39,8 +39,9 @@ namespace Infra.Events.Kafka
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            using (var consumer = new ConsumerBuilder<Ignore, string>(ConsumerConfig).Build())
+            _ = Task.Run(async () =>
             {
+                using var consumer = new ConsumerBuilder<Ignore, string>(ConsumerConfig).Build();
                 consumer.Subscribe(this._config.Topics);
                 while (_consuming)
                 {
@@ -64,7 +65,7 @@ namespace Infra.Events.Kafka
                 }
 
                 consumer.Close();
-            }
+            });
         }
 
         public override Task StopAsync(CancellationToken cancellationToken)
