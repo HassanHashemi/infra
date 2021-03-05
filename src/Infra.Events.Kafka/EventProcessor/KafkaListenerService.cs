@@ -55,11 +55,9 @@ namespace Infra.Events.Kafka
                     }
                     catch (OperationCanceledException)
                     {
-                        consumer.Close();
                     }
                     catch (Exception e)
                     {
-                        consumer.Close();
                         this._logger.LogError(e, e.Message);
                     }
                 }

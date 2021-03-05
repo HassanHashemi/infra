@@ -27,7 +27,7 @@ namespace Infra.Events.Kafka
             }).Build();
         }
 
-        public Task Execute(string topic, Event @event, CancellationToken cancellationToken = default)
+        public Task Execute(string topic, object @event, CancellationToken cancellationToken = default)
         {
             Guard.NotNull(topic, nameof(topic));
             Guard.NotNull(@event, nameof(@event));
