@@ -1,4 +1,7 @@
-﻿using Autofac;
+﻿using Aota.SmppGateway.DataModel;
+using Autofac;
+using Autofac.Extensions.DependencyInjection;
+using Confluent.Kafka;
 using Domain;
 using Infra.Commands;
 using Infra.Common.Decorators;
@@ -6,114 +9,63 @@ using Infra.Events;
 using Infra.Events.Kafka;
 using Infra.Queries;
 using Microsoft.Extensions.Hosting;
-using News.Domain;
 using System;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
-using Aota.Gateway.Models;
 
-namespace Aota.Gateway.Models
+namespace Aota.SmppGateway.DataModel
 {
-    /// <summary>
-    /// Instantiated when a message is received from a scenario
-    /// </summary>
-    public class CloseHttpSessionGatewayMessage : Event
+    public class SmppGatewayMessage : Event
     {
+        public SmppGatewayMessage()
+        {
+        }
+
+        public string Value { get; set; }
     }
-
-    public class HttpGatewayMessage : Event { }
-    public class HttpGatewayMessageReceived : Event { }
-    public class HttpSessionStartedGatewayMessage : Event { }
-    public class SmppGatewayMessage : Event { }
-    public class SmppGatewayMessageReceived : Event { }
-    public class StartGatewayMessage : Event { }
 }
-
 
 namespace Sample01
 {
-    public class UserCreated : DomainEvent
+    public class TestHandler : IMessageHandler<SmppGatewayMessage>
     {
-        public UserCreated(Guid userId, string fullName) : base(userId)
+        public Task Handle(SmppGatewayMessage @event)
         {
-            FullName = fullName;
-            UserId = userId;
-        }
-
-        public string FullName { get; set; }
-        public Guid UserId { get; set; }
-    }
-
-    public class TestHandler : MessageHandler
-    {
-        public TestHandler(KafkaListenerCallbacks callbacks) : base(callbacks)
-        {
-        }
-
-        protected override Task MessageReceived(BusMessageReceivedArgs e)
-        {
-            Console.WriteLine(e);
-
-            return Task.CompletedTask;
+            throw new NotImplementedException();
         }
     }
 
-    public class LoggerService : BackgroundService
-    {
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            while (true)
-            {
-                await Task.Delay(3_000);
-                Console.WriteLine("**************************************");
-                Console.WriteLine("**************************************");
-                Console.WriteLine("**************************************");
-                Console.WriteLine("**************************************");
-                Console.WriteLine("**************************************");
-            }
-        }
-    }
     public static class Program
     {
-        public static async Task Main(string[] args)
-        {
-            var bus = new KafkaEventBus(new KafkaProducerConfig
+        public static IHostBuilder CreateHostBuilder(string[] args) =>
+            Host.CreateDefaultBuilder(args)
+                .UseServiceProviderFactory(new AutofacServiceProviderFactory())
+            .ConfigureContainer<ContainerBuilder>(builder =>
             {
-                BootstrapServers = "kafka:9092"
+                builder.AddKafka(p =>
+                {
+                    p.BootstrapServers = "172.20.20.29:30029";
+                },
+                consumer =>
+                {
+                    consumer.OffsetResetType = AutoOffsetReset.Earliest;
+                    consumer.GroupId = "flight-gateway";
+                    consumer.Topics = new[] { typeof(SmppGatewayMessage).FullName };
+                    consumer.BootstrappServers = "172.20.20.29:30029";
+                    consumer.EventAssemblies = new[] { typeof(Program).Assembly };
+                });
             });
 
-            await bus.Execute(new HttpGatewayMessage());
-            await bus.Execute(new HttpGatewayMessageReceived());
-            await bus.Execute(new CloseHttpSessionGatewayMessage());
-            await bus.Execute(new HttpSessionStartedGatewayMessage());
-            await bus.Execute(new SmppGatewayMessage());
-            await bus.Execute(new StartGatewayMessage());
+        public static async Task Main(string[] args)
+        {
+            await CreateHostBuilder(args).RunConsoleAsync();
 
-            return;
+            //var bus = new KafkaEventBus(new KafkaProducerConfig
+            //{
+            //    BootstrapServers = "172.20.20.29:30029"
+            //});
 
-            Host.CreateDefaultBuilder()
-              .ConfigureServices((context, services) =>
-              {
-                  services.AddMessageHandler<TestHandler>();
-                  services.AddHostedService<LoggerService>();
-                  services.AddKafka(
-                    p =>
-                    {
-                        p.BootstrapServers = "10.51.12.36:30029";
-                    },
-                    r =>
-                    {
-                        r.GroupId = "Campaign.Core";
-                        r.BootstrappServers = "10.51.12.36:30029";
-                        r.Topics = new[] { typeof(UserCreated).FullName }; // File.ReadAllLines("/storage/scenario/topics.txt");
-                    });
-              })
-              .Build()
-              .Run();
-
-
+            //await bus.Execute(new SmppGatewayMessage { Value = "akbar" });
 
             //var options = Options.Create(new EventStoreConfig()
             //{

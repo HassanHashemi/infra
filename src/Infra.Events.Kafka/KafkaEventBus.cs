@@ -21,13 +21,13 @@ namespace Infra.Events.Kafka
         {
             Guard.NotNull(config.Value, nameof(config));
 
-            _producer = new ProducerBuilder<Null, string>(new ProducerConfig()
+            _producer = new ProducerBuilder<Null, string>(new ProducerConfig
             {
                 BootstrapServers = config.Value.BootstrapServers
             }).Build();
         }
 
-        public Task Execute(string topic, object @event, CancellationToken cancellationToken = default)
+        public Task Execute(string topic, Event @event, CancellationToken cancellationToken = default)
         {
             Guard.NotNull(topic, nameof(topic));
             Guard.NotNull(@event, nameof(@event));
@@ -44,9 +44,10 @@ namespace Infra.Events.Kafka
         {
             Guard.NotNull(@event, nameof(@event));
 
-            var message = new Message<Null, string>()
+            var eventData = JsonConvert.SerializeObject(@event);
+            var message = new Message<Null, string>
             {
-                Value = JsonConvert.SerializeObject(@event)
+                Value = eventData
             };
 
             return _producer.ProduceAsync(@event.EventName, message, cancellationToken);
