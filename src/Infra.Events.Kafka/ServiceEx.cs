@@ -1,8 +1,10 @@
 ﻿using Autofac;
+using Domain;
 using Infra.Eevents;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using System;
+using System.Linq;
 
 namespace Infra.Events.Kafka
 {
@@ -44,8 +46,19 @@ namespace Infra.Events.Kafka
             Guard.NotNull(configurator, nameof(configurator));
 
             var config = new SubscriberConfig();
+
             // Consumer
             configurator(config);
+
+            var events = config.EventAssemblies
+                .SelectMany(a => a.GetTypes())
+                    .Where(t => t.IsAssignableTo<Event>());
+
+            foreach (var type in events)
+            {
+                config.Topics.Add(type.FullName);
+            }
+
             builder.RegisterInstance(Options.Create(config));
 
             builder.RegisterType<KafkaListenerService>()

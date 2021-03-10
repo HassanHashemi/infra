@@ -50,7 +50,7 @@ namespace Sample01
                 {
                     consumer.OffsetResetType = AutoOffsetReset.Earliest;
                     consumer.GroupId = "flight-gateway";
-                    consumer.Topics = new[] { typeof(SmppGatewayMessage).FullName };
+                    //consumer.Topics = new[] { typeof(SmppGatewayMessage).FullName };
                     consumer.BootstrappServers = "172.20.20.29:30029";
                     consumer.EventAssemblies = new[] { typeof(Program).Assembly };
                 });
