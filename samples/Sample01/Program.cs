@@ -17,10 +17,6 @@ namespace Aota.SmppGateway.DataModel
 {
     public class SmppGatewayMessage : Event
     {
-        public SmppGatewayMessage()
-        {
-        }
-
         public string Value { get; set; }
     }
 }

@@ -54,7 +54,6 @@ namespace Infra.Events.Kafka
                         var message = consumer.Consume(stoppingToken);
                         var eventData = JsonConvert.DeserializeObject<Event>(message.Message.Value);
                         await _handlerFactory.Invoke(eventData.EventName, message.Message.Value);
-
                         consumer.Commit(message);
                         _logger.LogInformation($"Consumed Message {message.Message.Value} from topic: {message.Topic}");
                     }
