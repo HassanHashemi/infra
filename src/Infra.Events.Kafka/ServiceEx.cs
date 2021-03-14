@@ -69,7 +69,7 @@ namespace Infra.Events.Kafka
                 .RegisterAssemblyTypes(config.EventAssemblies)
                 .AsClosedTypesOf(typeof(IMessageHandler<>))
                     .AsImplementedInterfaces()
-                    .InstancePerLifetimeScope();
+                    .InstancePerDependency();
 
             builder
                 .RegisterType<HandlerInvoker>()

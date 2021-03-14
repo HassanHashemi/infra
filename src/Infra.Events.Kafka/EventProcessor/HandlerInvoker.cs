@@ -20,7 +20,7 @@ namespace Infra.Events.Kafka
             this._scanningAssemblies = options.Value.EventAssemblies;
         }
 
-        public async Task Invoke(string eventName, string eventData)
+        public async Task Invoke(string eventName, string eventData, Dictionary<string, string> headers)
         {
             var type = GetType(eventName);
 
@@ -42,7 +42,7 @@ namespace Infra.Events.Kafka
 
             foreach (dynamic handler in handlers)
             {
-                await handler.Handle((dynamic)@event);
+                await handler.Handle((dynamic)@event, headers);
             }
         }
 

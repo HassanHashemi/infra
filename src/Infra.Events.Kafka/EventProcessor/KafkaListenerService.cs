@@ -5,6 +5,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using System;
+using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -53,8 +55,18 @@ namespace Infra.Events.Kafka
                     {
                         var message = consumer.Consume(stoppingToken);
                         var eventData = JsonConvert.DeserializeObject<Event>(message.Message.Value);
-                        await _handlerFactory.Invoke(eventData.EventName, message.Message.Value);
+                        await _handlerFactory.Invoke(
+                            eventData.EventName, 
+                            message.Message.Value,
+                            message.Message.Headers.Select(h => new 
+                            {
+                                h.Key, 
+                                Value = Encoding.UTF8.GetString(h.GetValueBytes())
+                            })
+                            .ToDictionary(d => d.Key, v => v.Value));
+
                         consumer.Commit(message);
+                        
                         _logger.LogInformation($"Consumed Message {message.Message.Value} from topic: {message.Topic}");
                     }
                     catch (OperationCanceledException)

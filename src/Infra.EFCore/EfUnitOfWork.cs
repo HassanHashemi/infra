@@ -57,7 +57,7 @@ namespace Infra.EFCore
 
             foreach (var item in root.UncommittedChanges)
             {
-                await _syncEventBus.Execute(item, CancellationToken.None);
+                await _syncEventBus.Execute(item, null, CancellationToken.None);
             }
 
             foreach (var item in root.UncommittedChanges)
@@ -77,7 +77,7 @@ namespace Infra.EFCore
 
             try
             {
-                await _eventBus.Execute(item);
+                await _eventBus.Execute(item, null);
             }
             catch (Exception ex)
             {

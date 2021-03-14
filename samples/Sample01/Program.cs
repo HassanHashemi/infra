@@ -10,6 +10,7 @@ using Infra.Events.Kafka;
 using Infra.Queries;
 using Microsoft.Extensions.Hosting;
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -25,9 +26,9 @@ namespace Sample01
 {
     public class TestHandler : IMessageHandler<SmppGatewayMessage>
     {
-        public Task Handle(SmppGatewayMessage @event)
+        public Task Handle(SmppGatewayMessage @event, Dictionary<string, string> headers)
         {
-            throw new NotImplementedException();
+            return Task.CompletedTask;
         }
     }
 
@@ -61,7 +62,12 @@ namespace Sample01
             //    BootstrapServers = "172.20.20.29:30029"
             //});
 
-            //await bus.Execute(new SmppGatewayMessage { Value = "akbar" });
+            //var dict = new Dictionary<string, string>() 
+            //{
+            //    { "name", "Pear" }
+            //};
+
+            //await bus.Execute(new SmppGatewayMessage { Value = "akbar" }, dict);
 
             //var options = Options.Create(new EventStoreConfig()
             //{

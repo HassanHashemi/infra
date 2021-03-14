@@ -4,6 +4,8 @@ using Infra.Eevents;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -27,7 +29,7 @@ namespace Infra.Events.Kafka
             }).Build();
         }
 
-        public Task Execute(string topic, Event @event, CancellationToken cancellationToken = default)
+        public Task Execute(string topic, Event @event, Dictionary<string, string> headers = null, CancellationToken cancellationToken = default)
         {
             Guard.NotNull(topic, nameof(topic));
             Guard.NotNull(@event, nameof(@event));
@@ -37,10 +39,12 @@ namespace Infra.Events.Kafka
                 Value = JsonConvert.SerializeObject(@event)
             };
 
+            AddHeaders(headers, message);
+
             return _producer.ProduceAsync(topic, message, cancellationToken);
         }
 
-        public Task Execute<TEvent>(TEvent @event, CancellationToken cancellationToken = default) where TEvent : Event
+        public Task Execute<TEvent>(TEvent @event, Dictionary<string, string> headers = null, CancellationToken cancellationToken = default) where TEvent : Event
         {
             Guard.NotNull(@event, nameof(@event));
 
@@ -50,7 +54,24 @@ namespace Infra.Events.Kafka
                 Value = eventData
             };
 
+            AddHeaders(headers, message);
+
             return _producer.ProduceAsync(@event.EventName, message, cancellationToken);
+        }
+
+        private static void AddHeaders(Dictionary<string, string> headers, Message<Null, string> message)
+        {
+            if (headers != null)
+            {
+                var headerValues = new Headers();
+
+                foreach (var item in headers)
+                {
+                    headerValues.Add(item.Key, Encoding.UTF8.GetBytes(item.Value));
+                }
+
+                message.Headers = headerValues;
+            }
         }
     }
 }
