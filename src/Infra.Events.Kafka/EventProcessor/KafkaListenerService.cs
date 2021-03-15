@@ -58,11 +58,9 @@ namespace Infra.Events.Kafka
                         await _handlerFactory.Invoke(
                             eventData.EventName, 
                             message.Message.Value,
-                            message.Message.Headers.Select(h => new 
-                            {
-                                h.Key, 
-                                Value = Encoding.UTF8.GetString(h.GetValueBytes())
-                            })
+                            message.Message.Headers.ToDictionary(
+                                k => k.Key,
+                                v => Encoding.UTF8.GetString(v.GetValueBytes()))
                             .ToDictionary(d => d.Key, v => v.Value));
 
                         consumer.Commit(message);
