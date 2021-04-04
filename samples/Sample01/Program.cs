@@ -163,11 +163,11 @@ namespace Sample01
 
             builder
                .RegisterGenericDecorator(
-               typeof(CommandLoggerDecorator<,>),
-               typeof(ICommandHandler<,>),
-                   fromKey: "2",
-                   toKey: "3")
-                   .InstancePerLifetimeScope();
+                   typeof(CommandLoggerDecorator<,>),
+                   typeof(ICommandHandler<,>),
+                       fromKey: "2",
+                       toKey: "3")
+                       .InstancePerLifetimeScope();
 
             return builder;
         }

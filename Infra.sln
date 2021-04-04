@@ -17,6 +17,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Infra.EFCore", "src\Infra.E
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Infra.Events.Kafka", "src\Infra.Events.Kafka\Infra.Events.Kafka.csproj", "{B456F47E-C7F0-4705-AF95-3DBCB033ECA3}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Infra.MongoDB", "src\Infra.MongoDB\Infra.MongoDB.csproj", "{F8F5C86F-B826-4F4A-B1AC-FD2B422CB740}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -43,6 +45,10 @@ Global
 		{B456F47E-C7F0-4705-AF95-3DBCB033ECA3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B456F47E-C7F0-4705-AF95-3DBCB033ECA3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B456F47E-C7F0-4705-AF95-3DBCB033ECA3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F8F5C86F-B826-4F4A-B1AC-FD2B422CB740}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F8F5C86F-B826-4F4A-B1AC-FD2B422CB740}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F8F5C86F-B826-4F4A-B1AC-FD2B422CB740}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F8F5C86F-B826-4F4A-B1AC-FD2B422CB740}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -53,6 +59,7 @@ Global
 		{A476C720-722D-4199-AC5E-BCEA7C485131} = {1C8030D6-32AA-494C-8AA9-5866BC7C7CA3}
 		{B9F70857-A00E-47E2-A31B-1A77FD6E2503} = {6E3DD5B0-80C1-40CE-963C-4274417D14CE}
 		{B456F47E-C7F0-4705-AF95-3DBCB033ECA3} = {6E3DD5B0-80C1-40CE-963C-4274417D14CE}
+		{F8F5C86F-B826-4F4A-B1AC-FD2B422CB740} = {6E3DD5B0-80C1-40CE-963C-4274417D14CE}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E81D39DB-ADF0-420F-AF1C-70B9FCAC58B6}
