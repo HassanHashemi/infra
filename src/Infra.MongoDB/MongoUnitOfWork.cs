@@ -4,6 +4,7 @@ using Infra.Events;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using System;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -40,9 +41,22 @@ namespace Infra.MongoDB
 
         public IMongoDatabase Database { get; private set; }
         public MongoGenericRepo<T> GenericRepo<T>() where T : class => new(Database);
+
         public IMongoCollection<TDoc> GetCollection<TDoc>(MongoCollectionSettings settings = null) where TDoc : class
         {
             return Database.GetCollection<TDoc>(typeof(TDoc).Name, settings);
+        }
+
+        public Task<IAsyncCursor<T>> FindCollection<T>(Expression<Func<T, bool>> filter) where T : class
+        {
+            return GetCollection<T>().FindAsync(filter);
+        }
+
+        public async Task<T> FindOne<T>(Expression<Func<T, bool>> filter) where T : class
+        {
+            var response = await this.FindCollection<T>(filter);
+
+            return await response.FirstOrDefaultAsync();
         }
 
         public async Task<int> Save(AggregateRoot root)
