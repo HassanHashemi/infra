@@ -20,10 +20,6 @@ namespace Infra.Events.Kafka
                 return
                     this.EventAssemblies.Count() > 0
                     &&
-                    this.Topics != null
-                    &&
-                    this.Topics.Any()
-                    &&
                     !string.IsNullOrEmpty(this.BootstrappServers)
                     &&
                     !string.IsNullOrEmpty(this.GroupId);

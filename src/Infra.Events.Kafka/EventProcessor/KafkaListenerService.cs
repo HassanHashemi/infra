@@ -40,6 +40,11 @@ namespace Infra.Events.Kafka
             this._logger = logger;
             this._config = subscriberConfig;
             this._handlerFactory = handlerFactory;
+
+            if (subscriberConfig.Topics == null || !subscriberConfig.Topics.Any())
+            {
+                _logger.LogWarning("No topics found to subscribe");
+            }
         }
 
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -56,7 +61,7 @@ namespace Infra.Events.Kafka
                         var message = consumer.Consume(stoppingToken);
                         var eventData = JsonConvert.DeserializeObject<Event>(message.Message.Value);
                         await _handlerFactory.Invoke(
-                            eventData.EventName, 
+                            eventData.EventName,
                             message.Message.Value,
                             message.Message.Headers.ToDictionary(
                                 k => k.Key,
@@ -64,7 +69,7 @@ namespace Infra.Events.Kafka
                             .ToDictionary(d => d.Key, v => v.Value));
 
                         consumer.Commit(message);
-                        
+
                         _logger.LogInformation($"Consumed Message {message.Message.Value} from topic: {message.Topic}");
                     }
                     catch (OperationCanceledException)
