@@ -29,7 +29,11 @@ namespace Infra.Events.Kafka
                 throw new InvalidOperationException($"Could not find handler for {eventName}");
             }
 
-            var @event = JsonConvert.DeserializeObject(eventData, type);
+            var @event = JsonConvert.DeserializeObject(eventData, type, new JsonSerializerSettings
+            {
+                Error = (e, args) 
+                    => args.ErrorContext.Handled = true
+            });
 
             if (@event == null)
             {

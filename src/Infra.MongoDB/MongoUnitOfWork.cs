@@ -47,6 +47,11 @@ namespace Infra.MongoDB
             return Database.GetCollection<TDoc>(typeof(TDoc).Name, settings);
         }
 
+        public Task<IAsyncCursor<T>> FindCollection<T>() where T : class
+        {
+            return GetCollection<T>().AsQueryable().ToCursorAsync();
+        }
+
         public Task<IAsyncCursor<T>> FindCollection<T>(Expression<Func<T, bool>> filter) where T : class
         {
             return GetCollection<T>().FindAsync(filter);
@@ -54,7 +59,7 @@ namespace Infra.MongoDB
 
         public async Task<T> FindOne<T>(Expression<Func<T, bool>> filter) where T : class
         {
-            var response = await this.FindCollection<T>(filter);
+            var response = await this.FindCollection(filter);
 
             return await response.FirstOrDefaultAsync();
         }
@@ -65,10 +70,12 @@ namespace Infra.MongoDB
 
             try
             {
-                await Database.GetCollection<AggregateRoot>(collectionName)
+                await Database
+                    .GetCollection<AggregateRoot>(collectionName)
                     .ReplaceOneAsync(f => f.Id == root.Id, root, new ReplaceOptions
                     {
-                        IsUpsert = true
+                        IsUpsert = true,
+                        Collation = new Collation("en_US")
                     });
             }
             catch (Exception ex)
