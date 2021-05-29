@@ -1,4 +1,5 @@
 ﻿using Autofac;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using System;
@@ -12,11 +13,18 @@ namespace Infra.Events.Kafka
     public class HandlerInvoker
     {
         private readonly ILifetimeScope _scope;
+        private readonly ILogger<HandlerInvoker> _logger;
+        private readonly IOptions<SubscriberConfig> _options;
         private readonly Assembly[] _scanningAssemblies;
 
-        public HandlerInvoker(ILifetimeScope scope, IOptions<SubscriberConfig> options)
+        public HandlerInvoker(
+            ILifetimeScope scope,
+            ILogger<HandlerInvoker> logger,
+            IOptions<SubscriberConfig> options)
         {
             this._scope = scope;
+            this._logger = logger;
+            this._options = options;
             this._scanningAssemblies = options.Value.EventAssemblies;
         }
 
@@ -31,13 +39,15 @@ namespace Infra.Events.Kafka
 
             var @event = JsonConvert.DeserializeObject(eventData, type, new JsonSerializerSettings
             {
-                Error = (e, args) 
+                Error = (e, args)
                     => args.ErrorContext.Handled = true
             });
 
             if (@event == null)
             {
-                throw new InvalidOperationException($"Could not deserialize to {eventName} payload: {eventData}");
+                _logger.LogError($"Could not deserialize to {eventName} payload: {eventData}");
+
+                return;
             }
 
             var handlerType = typeof(IMessageHandler<>).MakeGenericType(type);
