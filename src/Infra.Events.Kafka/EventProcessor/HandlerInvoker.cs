@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -10,6 +11,29 @@ using System.Threading.Tasks;
 
 namespace Infra.Events.Kafka
 {
+    public class PrivateSetterDefaultContractResolver : DefaultContractResolver
+    {
+        protected override JsonProperty CreateProperty(
+            MemberInfo member,
+            MemberSerialization memberSerialization)
+        {
+            //TODO: Maybe cache
+            var prop = base.CreateProperty(member, memberSerialization);
+
+            if (!prop.Writable)
+            {
+                var property = member as PropertyInfo;
+                if (property != null)
+                {
+                    var hasPrivateSetter = property.GetSetMethod(true) != null;
+                    prop.Writable = hasPrivateSetter;
+                }
+            }
+
+            return prop;
+        }
+    }
+
     public class HandlerInvoker
     {
         private readonly ILifetimeScope _scope;
@@ -37,11 +61,13 @@ namespace Infra.Events.Kafka
                 throw new InvalidOperationException($"Could not find handler for {eventName}");
             }
 
-            var @event = JsonConvert.DeserializeObject(eventData, type, new JsonSerializerSettings
+            var settings = new JsonSerializerSettings
             {
-                Error = (e, args)
-                    => args.ErrorContext.Handled = true
-            });
+                Error = (e, args) => args.ErrorContext.Handled = true,
+                ContractResolver = new PrivateSetterDefaultContractResolver(),
+            };
+            
+            var @event = JsonConvert.DeserializeObject(eventData, type, settings);
 
             if (@event == null)
             {
