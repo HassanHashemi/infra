@@ -9,7 +9,8 @@ using Infra.Events;
 using Infra.Events.Kafka;
 using Infra.Queries;
 using Microsoft.Extensions.Hosting;
-using System;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -18,7 +19,17 @@ namespace Aota.SmppGateway.DataModel
 {
     public class SmppGatewayMessage : Event
     {
-        public string Value { get; set; }
+        public SmppGatewayMessage()
+        {
+
+        }
+
+        public SmppGatewayMessage(string value)
+        {
+            Value = value;
+        }
+
+        public string Value { get; private set; }
     }
 }
 
@@ -31,7 +42,7 @@ namespace Sample01
             return Task.CompletedTask;
         }
     }
-
+   
     public static class Program
     {
         public static IHostBuilder CreateHostBuilder(string[] args) =>
@@ -55,7 +66,16 @@ namespace Sample01
 
         public static async Task Main(string[] args)
         {
-            await CreateHostBuilder(args).RunConsoleAsync();
+            var settings = new JsonSerializerSettings
+            {
+                Error = (e, args) => args.ErrorContext.Handled = true,
+                ContractResolver = new PrivateResolver(),
+            };
+
+            var data = JsonConvert.SerializeObject(new SmppGatewayMessage("Hassan"));
+            var result = JsonConvert.DeserializeObject<SmppGatewayMessage>(data, settings);
+            var a = 5;
+            //await CreateHostBuilder(args).RunConsoleAsync();
 
             //var bus = new KafkaEventBus(new KafkaProducerConfig
             //{

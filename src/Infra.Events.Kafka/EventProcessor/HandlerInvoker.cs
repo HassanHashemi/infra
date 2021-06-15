@@ -6,12 +6,13 @@ using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Infra.Events.Kafka
 {
-    public class PrivateSetterDefaultContractResolver : DefaultContractResolver
+    public class PrivateResolver : DefaultContractResolver
     {
         protected override JsonProperty CreateProperty(
             MemberInfo member,
@@ -64,7 +65,7 @@ namespace Infra.Events.Kafka
             var settings = new JsonSerializerSettings
             {
                 Error = (e, args) => args.ErrorContext.Handled = true,
-                ContractResolver = new PrivateSetterDefaultContractResolver(),
+                ContractResolver = new PrivateResolver(),
             };
             
             var @event = JsonConvert.DeserializeObject(eventData, type, settings);
