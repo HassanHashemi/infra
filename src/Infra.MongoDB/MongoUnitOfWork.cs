@@ -86,7 +86,10 @@ namespace Infra.MongoDB
 
             foreach (var item in root.UncommittedChanges)
             {
-                await _syncEventBus.Execute(item, null, CancellationToken.None);
+                if (item.MustPropagate)
+                {
+                    await _syncEventBus.Execute(item, null, CancellationToken.None);
+                }
             }
 
             foreach (var item in root.UncommittedChanges)
