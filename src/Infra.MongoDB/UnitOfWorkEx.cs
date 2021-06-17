@@ -6,7 +6,7 @@ namespace Infra.MongoDB
     {
         public static MongoGenericRepo<T> Repo<T>(this IUnitOfWork uow) where T : class
         {
-            if (!(uow is MongoUnitOfWork efUow))
+            if (uow is not MongoUnitOfWork efUow)
             {
                 throw new InvalidOperationException("uow must be EfUnitOfWork");
             }

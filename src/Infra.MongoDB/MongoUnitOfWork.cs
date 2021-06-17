@@ -4,6 +4,7 @@ using Infra.Events;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using System;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
