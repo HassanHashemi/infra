@@ -24,12 +24,7 @@ namespace Aota.SmppGateway.DataModel
 
         }
 
-        public SmppGatewayMessage(string value)
-        {
-            Value = value;
-        }
-
-        public string Value { get; private set; }
+        public string Value { get; set; }
     }
 }
 
@@ -52,7 +47,7 @@ namespace Sample01
             {
                 builder.AddKafka(p =>
                 {
-                    p.BootstrapServers = "172.20.20.29:30029";
+                    p.BootstrapServers = "172.20.20.101:32380";
                 },
                 consumer =>
                 {
@@ -66,28 +61,19 @@ namespace Sample01
 
         public static async Task Main(string[] args)
         {
-            var settings = new JsonSerializerSettings
-            {
-                Error = (e, args) => args.ErrorContext.Handled = true,
-                ContractResolver = new PrivateResolver(),
-            };
-
-            var data = JsonConvert.SerializeObject(new SmppGatewayMessage("Hassan"));
-            var result = JsonConvert.DeserializeObject<SmppGatewayMessage>(data, settings);
-            var a = 5;
             //await CreateHostBuilder(args).RunConsoleAsync();
 
-            //var bus = new KafkaEventBus(new KafkaProducerConfig
-            //{
-            //    BootstrapServers = "172.20.20.29:30029"
-            //});
+            var bus = new KafkaEventBus(new KafkaProducerConfig
+            {
+                BootstrapServers = "172.20.20.103:32486"
+            });
+            
+            var dict = new Dictionary<string, string>()
+            {
+                { "name", "Pear" }
+            };
 
-            //var dict = new Dictionary<string, string>() 
-            //{
-            //    { "name", "Pear" }
-            //};
-
-            //await bus.Execute(new SmppGatewayMessage { Value = "akbar" }, dict);
+            await bus.Execute(new SmppGatewayMessage { Value = "akbar" }, dict);
 
             //var options = Options.Create(new EventStoreConfig()
             //{

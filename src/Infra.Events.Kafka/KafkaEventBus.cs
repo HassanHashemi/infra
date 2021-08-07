@@ -22,10 +22,12 @@ namespace Infra.Events.Kafka
         public KafkaEventBus(IOptions<KafkaProducerConfig> config)
         {
             Guard.NotNull(config.Value, nameof(config));
+            var producerConfig = config.Value;
 
             _producer = new ProducerBuilder<Null, string>(new ProducerConfig
             {
-                BootstrapServers = config.Value.BootstrapServers
+                BootstrapServers = producerConfig.BootstrapServers,
+                MessageMaxBytes = producerConfig.MaxMessageBytes
             }).Build();
         }
 
