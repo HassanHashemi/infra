@@ -65,6 +65,15 @@ namespace Infra.MongoDB
             return await response.FirstOrDefaultAsync();
         }
 
+        public async Task Remove(AggregateRoot root)
+        {
+            var collectionName = root.GetType().Name;
+
+            await Database
+                .GetCollection<AggregateRoot>(collectionName)
+                .DeleteOneAsync(f => f.Id == root.Id);
+        }
+
         public async Task<int> Save(AggregateRoot root)
         {
             var collectionName = root.GetType().Name;
@@ -87,15 +96,15 @@ namespace Infra.MongoDB
 
             foreach (var item in root.UncommittedChanges)
             {
-                if (item.MustPropagate)
-                {
-                    await _syncEventBus.Execute(item, null, CancellationToken.None);
-                }
+                await _syncEventBus.Execute(item, null, CancellationToken.None);
             }
 
             foreach (var item in root.UncommittedChanges)
             {
-                await DispatchEvents(item);
+                if (item.MustPropagate)
+                {
+                    await DispatchEvents(item);
+                }
             }
 
             return 1;
