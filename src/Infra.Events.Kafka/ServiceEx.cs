@@ -26,7 +26,7 @@ namespace Infra.Events.Kafka
         }
 
         public static void AddKafkaProducer(
-            this ContainerBuilder builder, 
+            this ContainerBuilder builder,
             Action<KafkaProducerConfig> configurator)
         {
             Guard.NotNull(configurator, nameof(configurator));
@@ -56,7 +56,18 @@ namespace Infra.Events.Kafka
 
             foreach (var type in events)
             {
-                config.Topics.Add(type.FullName);
+                if (type.GetConstructors().Any(c => c.GetParameters().Count() == 0))
+                {
+                    var handlerType = typeof(IMessageHandler<>).MakeGenericType(type);
+                    var hasHandler = config
+                        .EventAssemblies
+                        .Any(ass => ass.GetTypes().Any(ty => handlerType.IsAssignableFrom(ty)));
+
+                    if (hasHandler)
+                    {
+                        config.Topics.Add(type.FullName);
+                    }
+                }
             }
 
             builder.RegisterInstance(Options.Create(config));
