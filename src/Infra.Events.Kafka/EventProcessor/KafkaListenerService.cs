@@ -1,4 +1,5 @@
 ﻿using Confluent.Kafka;
+using Confluent.Kafka.Admin;
 using Domain;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -45,10 +46,16 @@ namespace Infra.Events.Kafka
             {
                 _logger.LogWarning("No topics found to subscribe");
             }
+            else
+            {
+                _logger.LogInformation($"subscribing to {JsonConvert.SerializeObject(subscriberConfig.Topics)}");
+            }
         }
 
-        protected override Task ExecuteAsync(CancellationToken stoppingToken)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            await InitializeTopics();
+
             _ = Task.Run(async () =>
             {
                 using var consumer = new ConsumerBuilder<Ignore, string>(ConsumerConfig).Build();
@@ -87,8 +94,30 @@ namespace Infra.Events.Kafka
 
                 consumer.Close();
             });
+        }
 
-            return Task.CompletedTask;
+        private async Task InitializeTopics()
+        {
+            using var adminClient = new AdminClientBuilder(new AdminClientConfig { BootstrapServers = _config.BootstrappServers }).Build();
+            try
+            {
+                foreach (var topic in _config.Topics)
+                {
+                    await adminClient.CreateTopicsAsync(new TopicSpecification[]
+                    {
+                        new TopicSpecification
+                        {
+                            Name = topic,
+                            ReplicationFactor = 1,
+                            NumPartitions = 1
+                        }
+                    });
+                }
+            }
+            catch (CreateTopicsException e)
+            {
+                _logger.LogError($"An error occured creating topic {e.Results[0].Topic}: {e.Results[0].Error.Reason}");
+            }
         }
 
         public override Task StopAsync(CancellationToken cancellationToken)

@@ -1,6 +1,7 @@
 ﻿using Confluent.Kafka;
 using Domain;
 using Infra.Eevents;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using System;
@@ -14,16 +15,18 @@ namespace Infra.Events.Kafka
     public class KafkaEventBus : IEventBus
     {
         private readonly IProducer<Null, string> _producer;
+        private readonly ILogger<KafkaEventBus> _logger;
 
-        public KafkaEventBus(KafkaProducerConfig config) : this(Options.Create(config))
+        public KafkaEventBus(KafkaProducerConfig config) : this(Options.Create(config), null)
         {
         }
 
-        public KafkaEventBus(IOptions<KafkaProducerConfig> config)
+        public KafkaEventBus(IOptions<KafkaProducerConfig> config, ILogger<KafkaEventBus> logger)
         {
             Guard.NotNull(config.Value, nameof(config));
             var producerConfig = config.Value;
 
+            _logger = logger;
             _producer = new ProducerBuilder<Null, string>(new ProducerConfig
             {
                 BootstrapServers = producerConfig.BootstrapServers,
@@ -43,6 +46,8 @@ namespace Infra.Events.Kafka
 
             AddHeaders(headers, message);
 
+            _logger?.LogInformation($"Pushing to ({topic}): {message.Value}");
+
             return _producer.ProduceAsync(topic, message, cancellationToken);
         }
 
@@ -57,6 +62,8 @@ namespace Infra.Events.Kafka
             };
 
             AddHeaders(headers, message);
+
+            _logger?.LogInformation($"Pushing to ({@event.EventName}): {message.Value}");
 
             return _producer.ProduceAsync(@event.EventName, message, cancellationToken);
         }

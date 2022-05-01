@@ -2,6 +2,7 @@
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Confluent.Kafka;
+using Confluent.Kafka.Admin;
 using Domain;
 using Infra.Commands;
 using Infra.Common.Decorators;
@@ -11,6 +12,7 @@ using Infra.Queries;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -47,7 +49,7 @@ namespace Sample01
             {
                 builder.AddKafka(p =>
                 {
-                    p.BootstrapServers = "172.20.20.101:32380";
+                    p.BootstrapServers = "172.20.20.29:30029";
                 },
                 consumer =>
                 {
@@ -61,13 +63,29 @@ namespace Sample01
 
         public static async Task Main(string[] args)
         {
-            //await CreateHostBuilder(args).RunConsoleAsync();
+            await CreateHostBuilder(args).RunConsoleAsync();
+            return;
+            //using var adminClient = new AdminClientBuilder(new AdminClientConfig
+            //{
+            //    BootstrapServers = "172.20.20.29:30029"
+            //}).Build();
+            //try
+            //{
+            //    await adminClient.CreateTopicsAsync(new TopicSpecification[] {
+            //        new TopicSpecification { Name = "Actic.Handlers.Events.External.PaidReservationCreated_StaffOrderHandler.StaffOrderCreated", ReplicationFactor = 1, NumPartitions = 1 } });
+            //}
+            //catch (CreateTopicsException e)
+            //{
+            //    Console.WriteLine($"An error occured creating topic {e.Results[0].Topic}: {e.Results[0].Error.Reason}");
+            //}
+
+            //return;
 
             var bus = new KafkaEventBus(new KafkaProducerConfig
             {
-                BootstrapServers = "172.20.20.103:32486"
+                BootstrapServers = "172.20.20.29:30029"
             });
-            
+
             var dict = new Dictionary<string, string>()
             {
                 { "name", "Pear" }
