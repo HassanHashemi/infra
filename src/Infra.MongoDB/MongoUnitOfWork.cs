@@ -65,15 +65,18 @@ namespace Infra.MongoDB
             return await response.FirstOrDefaultAsync();
         }
 
-        public async Task<int> Save(AggregateRoot root)
+        public async Task<int> Save<T>(AggregateRoot<T> root)
         {
+            if (root is not AggregateRoot<Guid> ar)
+                throw new ArgumentException("only AggregateRoot<Guid> is supported");
+            
             var collectionName = root.GetType().Name;
-
+            
             try
             {
                 await Database
-                    .GetCollection<AggregateRoot>(collectionName)
-                    .ReplaceOneAsync(f => f.Id == root.Id, root, new ReplaceOptions
+                    .GetCollection<AggregateRoot<Guid>>(collectionName)
+                    .ReplaceOneAsync(f => f.Id == ar.Id, ar, new ReplaceOptions
                     {
                         IsUpsert = true,
                         Collation = new Collation("en_US")

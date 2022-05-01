@@ -41,7 +41,53 @@ namespace Infra.EFCore
         public DbContext Context { get; }
         public IGenericRepository<T> GenericRepo<T>() where T : class => new EfGenericRepo<T>(Context);
 
-        public async Task<int> Save(AggregateRoot root)
+        //public async Task<int> Save(AggregateRoot root)
+        //{
+        //    int rowCount;
+
+        //    try
+        //    {
+        //        rowCount = await Context.SaveChangesAsync();
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex.Message);
+        //        throw;
+        //    }
+
+        //    foreach (var item in root.UncommittedChanges)
+        //    {
+        //        await _syncEventBus.Execute(item, null, CancellationToken.None);
+        //    }
+
+        //    foreach (var item in root.UncommittedChanges)
+        //    {
+        //        await DispatchEvents(item);
+        //    }
+
+        //    return rowCount;
+        //}
+
+        private async Task DispatchEvents(Event item)
+        {
+            if (_eventBus == null)
+            {
+                return;
+            }
+
+            try
+            {
+                await _eventBus.Execute(item, null);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.Message);
+            }
+        }
+
+        public Task<int> Save() => Context.SaveChangesAsync();
+
+        public async Task<int> Save<T>(AggregateRoot<T> root)
         {
             int rowCount;
 
@@ -67,24 +113,5 @@ namespace Infra.EFCore
 
             return rowCount;
         }
-
-        private async Task DispatchEvents(Event item)
-        {
-            if (_eventBus == null)
-            {
-                return;
-            }
-
-            try
-            {
-                await _eventBus.Execute(item, null);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex.Message);
-            }
-        }
-
-        public Task<int> Save() => Context.SaveChangesAsync();
     }
 }
