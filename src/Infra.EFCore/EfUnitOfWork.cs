@@ -41,33 +41,6 @@ namespace Infra.EFCore
         public DbContext Context { get; }
         public IGenericRepository<T> GenericRepo<T>() where T : class => new EfGenericRepo<T>(Context);
 
-        //public async Task<int> Save(AggregateRoot root)
-        //{
-        //    int rowCount;
-
-        //    try
-        //    {
-        //        rowCount = await Context.SaveChangesAsync();
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        _logger.LogError(ex.Message);
-        //        throw;
-        //    }
-
-        //    foreach (var item in root.UncommittedChanges)
-        //    {
-        //        await _syncEventBus.Execute(item, null, CancellationToken.None);
-        //    }
-
-        //    foreach (var item in root.UncommittedChanges)
-        //    {
-        //        await DispatchEvents(item);
-        //    }
-
-        //    return rowCount;
-        //}
-
         private async Task DispatchEvents(Event item)
         {
             if (_eventBus == null)
@@ -101,6 +74,33 @@ namespace Infra.EFCore
                 throw;
             }
 
+            await DispatchEvents(root);
+
+            return rowCount;
+        }
+
+        public async Task<int> Delete(AggregateRoot root)
+        {
+            Context.Remove(root);
+
+            var affectedRows = await Context.SaveChangesAsync();
+            await DispatchEvents(root);
+
+            return affectedRows;
+        }
+
+        public async Task<int> Delete<T>(AggregateRoot<T> root)
+        {
+            Context.Remove(root);
+
+            var affectedRows = await Context.SaveChangesAsync();
+            await DispatchEvents(root);
+
+            return affectedRows;
+        }
+
+        private async Task DispatchEvents<T>(AggregateRoot<T> root)
+        {
             foreach (var item in root.UncommittedChanges)
             {
                 await _syncEventBus.Execute(item, null, CancellationToken.None);
@@ -110,8 +110,6 @@ namespace Infra.EFCore
             {
                 await DispatchEvents(item);
             }
-
-            return rowCount;
         }
     }
 }

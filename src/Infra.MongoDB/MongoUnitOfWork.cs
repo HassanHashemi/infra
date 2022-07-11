@@ -120,5 +120,15 @@ namespace Infra.MongoDB
                 _logger.LogError(ex.Message);
             }
         }
+
+        public Task<int> Delete(AggregateRoot root)
+        {
+            throw new NotSupportedException("Deleting from mongo is not supported right now.");
+        }
+
+        public Task<int> Delete<T>(AggregateRoot<T> root)
+        {
+            throw new NotSupportedException("Deleting from mongo is not supported right now.");
+        }
     }
 }
