@@ -41,7 +41,10 @@ namespace Infra.Events.Kafka
 
             var message = new Message<Null, string>
             {
-                Value = JsonConvert.SerializeObject(@event)
+                Value = JsonConvert.SerializeObject(@event, new JsonSerializerSettings 
+                {
+                    ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                })
             };
 
             AddHeaders(headers, message);
