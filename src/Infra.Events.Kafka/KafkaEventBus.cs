@@ -16,6 +16,10 @@ namespace Infra.Events.Kafka
     {
         private readonly IProducer<Null, string> _producer;
         private readonly ILogger<KafkaEventBus> _logger;
+        private static JsonSerializerSettings _jsonSerializerSettings = new JsonSerializerSettings 
+        {
+            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+        };
 
         public KafkaEventBus(KafkaProducerConfig config) : this(Options.Create(config), null)
         {
@@ -41,10 +45,7 @@ namespace Infra.Events.Kafka
 
             var message = new Message<Null, string>
             {
-                Value = JsonConvert.SerializeObject(@event, new JsonSerializerSettings 
-                {
-                    ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-                })
+                Value = JsonConvert.SerializeObject(@event, _jsonSerializerSettings)
             };
 
             AddHeaders(headers, message);
@@ -58,7 +59,7 @@ namespace Infra.Events.Kafka
         {
             Guard.NotNull(@event, nameof(@event));
 
-            var eventData = JsonConvert.SerializeObject(@event);
+            var eventData = JsonConvert.SerializeObject(@event, _jsonSerializerSettings);
             var message = new Message<Null, string>
             {
                 Value = eventData
