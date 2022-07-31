@@ -48,7 +48,7 @@ namespace Infra.Events.Kafka
             {
                 Value = JsonConvert.SerializeObject(@event, _jsonSerializerSettings)
             };
-
+            
             AddHeaders(headers, message);
 
             _logger?.LogInformation($"Pushing to ({topic}): {message.Value}");

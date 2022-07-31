@@ -64,20 +64,20 @@ namespace Sample01
 
         public static async Task Main(string[] args)
         {
-            //await CreateHostBuilder(args).RunConsoleAsync();
-            //return;
+            await CreateHostBuilder(args).RunConsoleAsync();
+            ////return;
             
-            var bus = new KafkaEventBus(new KafkaProducerConfig
-            {
-                BootstrapServers = "192.168.203.4:30044"
-            });
+            //var bus = new KafkaEventBus(new KafkaProducerConfig
+            //{
+            //    BootstrapServers = "192.168.203.4:30044"
+            //});
 
-            var dict = new Dictionary<string, string>()
-            {
-                { "name", "Pear" }
-            };
+            //var dict = new Dictionary<string, string>()
+            //{
+            //    { "name", "Pear" }
+            //};
 
-            await bus.Execute(new SmppGatewayMessage { Value = "akbar" }, dict);
+            //await bus.Execute(new SmppGatewayMessage { Value = "akbar" }, dict);
 
             //var options = Options.Create(new EventStoreConfig()
             //{

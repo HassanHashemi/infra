@@ -16,10 +16,14 @@ namespace Infra.Events.Kafka
     public class KafkaListenerService : BackgroundService
     {
         private bool _consuming = true;
-
+        
         private readonly ILogger<KafkaListenerService> _logger;
         private readonly SubscriberConfig _config;
         private readonly HandlerInvoker _handlerFactory;
+        private static JsonSerializerSettings _serializerSettings = new JsonSerializerSettings
+        {
+            ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor
+        };
 
         public KafkaListenerService(
             ILogger<KafkaListenerService> logger,
@@ -66,7 +70,7 @@ namespace Infra.Events.Kafka
                     try
                     {
                         var message = consumer.Consume(stoppingToken);
-                        var eventData = JsonConvert.DeserializeObject<Event>(message.Message.Value);
+                        var eventData = JsonConvert.DeserializeObject<Event>(message.Message.Value, _serializerSettings);
                         await _handlerFactory.Invoke(
                             eventData.EventName,
                             message.Message.Value,
