@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -67,9 +68,22 @@ namespace Infra.Events.Kafka
 
             AddHeaders(headers, message);
 
-            _logger?.LogInformation($"Pushing to ({@event.EventName}): {message.Value}");
 
-            return _producer.ProduceAsync(@event.EventName, message, cancellationToken);
+            var topicName = GetTopicName(@event);
+            _logger?.LogInformation($"Pushing to ({topicName}): {message.Value}");
+
+            return _producer.ProduceAsync(topicName, message, cancellationToken);
+        }
+
+        private string GetTopicName<TEvent>(TEvent @event) where TEvent : Event
+        {
+            var topicInfo = @event.GetType()
+                .GetCustomAttribute<TopicAttribute>();
+
+            if (topicInfo != null)
+                return topicInfo.Name;
+
+            return @event.EventName;
         }
 
         private static void AddHeaders(Dictionary<string, string> headers, Message<Null, string> message)

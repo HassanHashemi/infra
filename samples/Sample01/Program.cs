@@ -19,6 +19,7 @@ using System.Threading.Tasks;
 
 namespace Aota.SmppGateway.DataModel
 {
+    [Topic(Name = "smppgw")]
     public class SmppGatewayMessage : Event
     {
         public SmppGatewayMessage()
@@ -49,41 +50,26 @@ namespace Sample01
             {
                 builder.AddKafka(p =>
                 {
-                    p.BootstrapServers = "172.20.20.29:30029";
+                    p.BootstrapServers = "192.168.203.4:30044";
                 },
                 consumer =>
                 {
                     consumer.OffsetResetType = AutoOffsetReset.Earliest;
-                    consumer.GroupId = "flight-gateway";
+                    consumer.GroupId = "gw-test";
                     //consumer.Topics = new[] { typeof(SmppGatewayMessage).FullName };
-                    consumer.BootstrappServers = "172.20.20.29:30029";
+                    consumer.BootstrappServers = "192.168.203.4:30044";
                     consumer.EventAssemblies = new[] { typeof(Program).Assembly };
                 });
             });
 
         public static async Task Main(string[] args)
         {
-            await CreateHostBuilder(args).RunConsoleAsync();
-            return;
-            //using var adminClient = new AdminClientBuilder(new AdminClientConfig
-            //{
-            //    BootstrapServers = "172.20.20.29:30029"
-            //}).Build();
-            //try
-            //{
-            //    await adminClient.CreateTopicsAsync(new TopicSpecification[] {
-            //        new TopicSpecification { Name = "Actic.Handlers.Events.External.PaidReservationCreated_StaffOrderHandler.StaffOrderCreated", ReplicationFactor = 1, NumPartitions = 1 } });
-            //}
-            //catch (CreateTopicsException e)
-            //{
-            //    Console.WriteLine($"An error occured creating topic {e.Results[0].Topic}: {e.Results[0].Error.Reason}");
-            //}
-
+            //await CreateHostBuilder(args).RunConsoleAsync();
             //return;
-
+            
             var bus = new KafkaEventBus(new KafkaProducerConfig
             {
-                BootstrapServers = "172.20.20.29:30029"
+                BootstrapServers = "192.168.203.4:30044"
             });
 
             var dict = new Dictionary<string, string>()

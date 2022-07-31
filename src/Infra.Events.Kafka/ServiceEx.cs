@@ -5,6 +5,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using System;
 using System.Linq;
+using System.Reflection;
 
 namespace Infra.Events.Kafka
 {
@@ -54,19 +55,23 @@ namespace Infra.Events.Kafka
                 .SelectMany(a => a.GetTypes())
                     .Where(t => t.IsAssignableTo<Event>());
 
-            foreach (var type in events)
+            foreach (var eventType in events)
             {
-                if (type.GetConstructors().Any(c => c.GetParameters().Count() == 0))
+                if (!eventType.GetConstructors().Any(c => c.GetParameters().Count() == 0))
                 {
-                    var handlerType = typeof(IMessageHandler<>).MakeGenericType(type);
-                    var hasHandler = config
-                        .EventAssemblies
-                        .Any(ass => ass.GetTypes().Any(ty => handlerType.IsAssignableFrom(ty)));
+                    continue;
+                }
 
-                    if (hasHandler)
-                    {
-                        config.Topics.Add(type.FullName);
-                    }
+                var handlerType = typeof(IMessageHandler<>).MakeGenericType(eventType);
+                var hasHandler = config
+                    .EventAssemblies
+                    .Any(ass => ass.GetTypes().Any(ty => handlerType.IsAssignableFrom(ty)));
+
+                if (hasHandler)
+                {
+                    var topicInfo = eventType.GetCustomAttribute<TopicAttribute>();
+
+                    config.Topics.Add(topicInfo?.Name ?? eventType.FullName);
                 }
             }
 
