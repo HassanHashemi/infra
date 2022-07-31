@@ -19,6 +19,20 @@ using System.Threading.Tasks;
 
 namespace Aota.SmppGateway.DataModel
 {
+    public class Inner
+    {
+        private Inner()
+        {
+        }
+
+        public Inner(string value)
+        {
+            Item = value;
+        }
+
+        public string Item { get; set; }
+    }
+
     [Topic(Name = "smppgw")]
     public class SmppGatewayMessage : Event
     {
@@ -27,7 +41,13 @@ namespace Aota.SmppGateway.DataModel
 
         }
 
+        //public SmppGatewayMessage()
+        //{
+
+        //}
+
         public string Value { get; set; }
+        public Inner Inner { get; set; }
     }
 }
 
@@ -40,7 +60,7 @@ namespace Sample01
             return Task.CompletedTask;
         }
     }
-   
+
     public static class Program
     {
         public static IHostBuilder CreateHostBuilder(string[] args) =>
@@ -65,8 +85,8 @@ namespace Sample01
         public static async Task Main(string[] args)
         {
             await CreateHostBuilder(args).RunConsoleAsync();
-            ////return;
-            
+            return;
+
             //var bus = new KafkaEventBus(new KafkaProducerConfig
             //{
             //    BootstrapServers = "192.168.203.4:30044"
@@ -77,7 +97,7 @@ namespace Sample01
             //    { "name", "Pear" }
             //};
 
-            //await bus.Execute(new SmppGatewayMessage { Value = "akbar" }, dict);
+            //await bus.Execute(new SmppGatewayMessage { Value = "akbar", Inner = new Inner("pear") }, dict);
 
             //var options = Options.Create(new EventStoreConfig()
             //{

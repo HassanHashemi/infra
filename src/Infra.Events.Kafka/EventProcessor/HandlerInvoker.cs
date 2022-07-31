@@ -41,6 +41,7 @@ namespace Infra.Events.Kafka
         private readonly ILogger<HandlerInvoker> _logger;
         private readonly IOptions<SubscriberConfig> _options;
         private readonly Assembly[] _scanningAssemblies;
+        private static  JsonSerializerSettings _settings;
 
         public HandlerInvoker(
             ILifetimeScope scope,
@@ -62,13 +63,14 @@ namespace Infra.Events.Kafka
                 throw new InvalidOperationException($"Could not find handler for {eventName}");
             }
 
-            var settings = new JsonSerializerSettings
+            _settings = new JsonSerializerSettings
             {
                 Error = (e, args) => args.ErrorContext.Handled = true,
                 ContractResolver = new PrivateResolver(),
+                ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor
             };
             
-            var @event = JsonConvert.DeserializeObject(eventData, type, settings);
+            var @event = JsonConvert.DeserializeObject(eventData, type, _settings);
 
             if (@event == null)
             {
