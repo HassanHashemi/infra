@@ -65,7 +65,7 @@ namespace Infra.Events.Kafka
                 using var consumer = new ConsumerBuilder<Ignore, string>(ConsumerConfig).Build();
                 consumer.Subscribe(this._config.Topics);
 
-                while (_consuming)
+                while (_consuming || !stoppingToken.IsCancellationRequested)
                 {
                     try
                     {
@@ -131,7 +131,7 @@ namespace Infra.Events.Kafka
             return Task.CompletedTask;
         }
 
-        private ConsumerConfig ConsumerConfig => new ConsumerConfig
+        protected virtual ConsumerConfig ConsumerConfig => new ConsumerConfig
         {
             GroupId = this._config.GroupId,
             BootstrapServers = this._config.BootstrappServers,

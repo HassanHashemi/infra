@@ -44,9 +44,10 @@ namespace Infra.EFCore
         private async Task DispatchEvents(Event item)
         {
             if (_eventBus == null)
-            {
                 return;
-            }
+
+            if (!item.MustPropagate)
+                return;
 
             try
             {
@@ -103,7 +104,8 @@ namespace Infra.EFCore
         {
             foreach (var item in root.UncommittedChanges)
             {
-                await _syncEventBus.Execute(item, null, CancellationToken.None);
+                if (item.MustPropagate)
+                    await _syncEventBus.Execute(item, null, CancellationToken.None);
             }
 
             foreach (var item in root.UncommittedChanges)
