@@ -4,6 +4,7 @@ using Infra.Events;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -112,6 +113,8 @@ namespace Infra.EFCore
             {
                 await DispatchEvents(item);
             }
+
+            root.MarkChangesAsCommitted();
         }
     }
 }
