@@ -105,8 +105,7 @@ namespace Infra.EFCore
         {
             foreach (var item in root.UncommittedChanges)
             {
-                if (item.MustPropagate)
-                    await _syncEventBus.Execute(item, null, CancellationToken.None);
+                await _syncEventBus.Execute(item, null, CancellationToken.None);
             }
 
             foreach (var item in root.UncommittedChanges)
