@@ -60,7 +60,8 @@ namespace Infra.Events.Kafka
 
             if (type == null)
             {
-                throw new InvalidOperationException($"Could not find handler for {eventName}");
+                _logger.LogWarning($"Could not find handler for {eventName}");
+                return;
             }
 
             _settings = new JsonSerializerSettings
