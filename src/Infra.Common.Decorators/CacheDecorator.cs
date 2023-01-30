@@ -28,7 +28,7 @@ namespace Infra.Common.Decorators
                             (options) =>
                             {
                                 options.AbsoluteExpiration = cache.AbsoluteExpiration;
-                                options.SlidingExpiration = cache.SlidingExpiration;
+                                // options.SlidingExpiration = cache.SlidingExpiration;
 
                                 return _innerHandler.HandleAsync(parameters);
                             },
