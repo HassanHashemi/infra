@@ -41,7 +41,12 @@ namespace Infra.Events.Kafka
         private readonly ILogger<HandlerInvoker> _logger;
         private readonly IOptions<SubscriberConfig> _options;
         private readonly Assembly[] _scanningAssemblies;
-        private static  JsonSerializerSettings _settings;
+        private static  JsonSerializerSettings _settings = new JsonSerializerSettings
+        {
+            Error = (e, args) => args.ErrorContext.Handled = true,
+            ContractResolver = new PrivateResolver(),
+            ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor
+        };
 
         public HandlerInvoker(
             ILifetimeScope scope,
@@ -64,13 +69,6 @@ namespace Infra.Events.Kafka
                 return;
             }
 
-            _settings = new JsonSerializerSettings
-            {
-                Error = (e, args) => args.ErrorContext.Handled = true,
-                ContractResolver = new PrivateResolver(),
-                ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor
-            };
-            
             var @event = JsonConvert.DeserializeObject(eventData, type, _settings);
 
             if (@event == null)
