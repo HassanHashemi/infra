@@ -83,14 +83,15 @@ namespace Infra.Events.Kafka
 
                         _logger.LogInformation($"Consumed Message {message.Message.Value} from topic: {message.Topic}");
                     }
-                    catch (OperationCanceledException)
+                    catch (OperationCanceledException ex)
                     {
+                        _logger.LogError(ex.ToString());
                         consumer.Close();
                     }
-                    catch (Exception e)
+                    catch (Exception ex)
                     {
                         consumer.Close();
-                        this._logger.LogError(e, e.Message);
+                        this._logger.LogError(ex.ToString());
 
                         _consuming = false;
                     }
@@ -136,6 +137,8 @@ namespace Infra.Events.Kafka
             GroupId = this._config.GroupId,
             BootstrapServers = this._config.BootstrappServers,
             AutoOffsetReset = this._config.OffsetResetType,
+            MaxPollIntervalMs = this._config.MaxPollIntervalMs,
+            SessionTimeoutMs = this._config.SessionTimeoutMs,
             EnableAutoCommit = false,
             AllowAutoCreateTopics = true
         };

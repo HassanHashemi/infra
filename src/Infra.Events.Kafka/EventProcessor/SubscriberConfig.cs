@@ -11,6 +11,9 @@ namespace Infra.Events.Kafka
         public string BootstrappServers { get; set; }
         public string GroupId { get; set; }
         public AutoOffsetReset OffsetResetType { get; set; } = AutoOffsetReset.Earliest;
+        public bool AutoOffsetCommit { get; set; } = false;
+        public int? SessionTimeoutMs { get; set; }
+        public int? MaxPollIntervalMs { get; set; }
         public Assembly[] EventAssemblies { get; set; }
 
         public bool IsValid

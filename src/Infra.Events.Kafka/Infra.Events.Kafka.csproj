@@ -2,12 +2,12 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
-    <Version>2.0.28</Version>
+    <Version>2.0.29</Version>
     <PackageId>Infra.Events.Kafka</PackageId>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Confluent.Kafka" Version="1.5.2" />
+    <PackageReference Include="Confluent.Kafka" Version="2.0.2" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="3.1.10" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="3.1.10" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="3.1.10" />
