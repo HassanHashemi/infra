@@ -1,8 +1,6 @@
-﻿using Aota.SmppGateway.DataModel;
-using Autofac;
+﻿using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Confluent.Kafka;
-using Confluent.Kafka.Admin;
 using Domain;
 using Infra.Commands;
 using Infra.Common.Decorators;
@@ -10,14 +8,12 @@ using Infra.Events;
 using Infra.Events.Kafka;
 using Infra.Queries;
 using Microsoft.Extensions.Hosting;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
-using System;
+using Orders.Domain.Events;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
 
-namespace Aota.SmppGateway.DataModel
+namespace Orders.Domain.Events
 {
     public class Inner
     {
@@ -33,29 +29,29 @@ namespace Aota.SmppGateway.DataModel
         public string Item { get; set; }
     }
 
-    [Topic(Name = "smppgw")]
-    public class SmppGatewayMessage : Event
+    [Topic(Name = "Ota.FlightOrderItem1")]
+    public class FlightOrderItemStateChanged : Event
     {
-        public SmppGatewayMessage()
-        {
-
-        }
-
         //public SmppGatewayMessage()
         //{
 
         //}
 
-        public string Value { get; set; }
-        public Inner Inner { get; set; }
+        ////public SmppGatewayMessage()
+        ////{
+
+        ////}
+
+        //public string Value { get; set; }
+        //public Inner Inner { get; set; }
     }
 }
 
 namespace Sample01
 {
-    public class TestHandler : IMessageHandler<SmppGatewayMessage>
+    public class TestHandler : IMessageHandler<FlightOrderItemStateChanged>
     {
-        public Task Handle(SmppGatewayMessage @event, Dictionary<string, string> headers)
+        public Task Handle(FlightOrderItemStateChanged @event, Dictionary<string, string> headers)
         {
             return Task.CompletedTask;
         }
@@ -70,14 +66,14 @@ namespace Sample01
             {
                 builder.AddKafka(p =>
                 {
-                    p.BootstrapServers = "192.168.203.4:30044";
+                    p.BootstrapServers = "192.168.203.4:30044,192.168.203.4:30045";
                 },
                 consumer =>
                 {
                     consumer.OffsetResetType = AutoOffsetReset.Earliest;
-                    consumer.GroupId = "gw-test";
+                    consumer.GroupId = "gw-test37";
                     //consumer.Topics = new[] { typeof(SmppGatewayMessage).FullName };
-                    consumer.BootstrappServers = "192.168.203.4:30044";
+                    consumer.BootstrappServers = "192.168.203.4:30044,192.168.203.4:30045";
                     consumer.EventAssemblies = new[] { typeof(Program).Assembly };
                 });
             });
