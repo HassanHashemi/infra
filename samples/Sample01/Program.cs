@@ -8,6 +8,7 @@ using Infra.Events;
 using Infra.Events.Kafka;
 using Infra.Queries;
 using Microsoft.Extensions.Hosting;
+using News.Domain;
 using Orders.Domain.Events;
 using System.Collections.Generic;
 using System.Reflection;
@@ -30,7 +31,7 @@ namespace Orders.Domain.Events
     }
 
     [Topic(Name = "Ota.FlightOrderItem1")]
-    public class FlightOrderItemStateChanged : Event
+    public class FlightOrderItemStateChanged : DomainEvent
     {
         //public SmppGatewayMessage()
         //{
@@ -75,6 +76,9 @@ namespace Sample01
                     //consumer.Topics = new[] { typeof(SmppGatewayMessage).FullName };
                     consumer.BootstrappServers = "192.168.203.4:30044,192.168.203.4:30045";
                     consumer.EventAssemblies = new[] { typeof(Program).Assembly };
+                    consumer.MaxPollIntervalMs = 50_000;
+                    consumer.SessionTimeoutMs = 50_000;
+                    ///consumer.AutoOffsetCommit = false;
                 });
             });
 

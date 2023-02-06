@@ -70,8 +70,12 @@ namespace Infra.Events.Kafka
                 if (hasHandler)
                 {
                     var topicInfo = eventType.GetCustomAttribute<TopicAttribute>();
+                    var topicName = topicInfo?.Name ?? eventType.FullName;
 
-                    config.Topics.Add(topicInfo?.Name ?? eventType.FullName);
+                    if (config.Topics.Contains(topicName))
+                        continue;
+
+                    config.Topics.Add(topicName);
                 }
             }
 

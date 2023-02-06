@@ -63,7 +63,15 @@ namespace Infra.Events.Kafka
             _ = Task.Run(async () =>
             {
                 using var consumer = new ConsumerBuilder<Ignore, string>(ConsumerConfig).Build();
-                consumer.Subscribe(this._config.Topics);
+
+                try
+                {
+                    consumer.Subscribe(this._config.Topics);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex.ToString());
+                }
 
                 while (_consuming || !stoppingToken.IsCancellationRequested)
                 {
@@ -139,7 +147,8 @@ namespace Infra.Events.Kafka
             AutoOffsetReset = this._config.OffsetResetType,
             MaxPollIntervalMs = this._config.MaxPollIntervalMs,
             SessionTimeoutMs = this._config.SessionTimeoutMs,
-            EnableAutoCommit = false,
+            EnableAutoCommit = this._config.EnableAutoCommit,
+            EnableAutoOffsetStore = false,
             AllowAutoCreateTopics = true
         };
     }
