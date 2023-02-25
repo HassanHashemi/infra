@@ -71,13 +71,19 @@ namespace Infra.Events.Kafka
                 catch (Exception ex)
                 {
                     _logger.LogError(ex.ToString());
+                    throw;
                 }
 
                 while (_consuming || !stoppingToken.IsCancellationRequested)
                 {
                     try
                     {
-                        var message = consumer.Consume(stoppingToken);
+
+                        var message = consumer.Consume(TimeSpan.FromMilliseconds(150));
+
+                        if (message is null)
+                            continue;
+
                         var eventData = JsonConvert.DeserializeObject<Event>(message.Message.Value, _serializerSettings);
                         await _handlerFactory.Invoke(
                             eventData.EventName,
@@ -94,12 +100,12 @@ namespace Infra.Events.Kafka
                     catch (OperationCanceledException ex)
                     {
                         _logger.LogError(ex.ToString());
-                        consumer.Close();
+                        //consumer.Close();
                     }
                     catch (Exception ex)
                     {
-                        consumer.Close();
                         this._logger.LogError(ex.ToString());
+                        //consumer.Close();
 
                         _consuming = false;
                     }
