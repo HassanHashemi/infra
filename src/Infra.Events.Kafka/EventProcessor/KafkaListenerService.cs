@@ -30,6 +30,7 @@ namespace Infra.Events.Kafka
             HandlerInvoker handlerFactory,
             IOptions<SubscriberConfig> subscriberConfig) : this(logger, handlerFactory, subscriberConfig.Value)
         {
+            
         }
 
         public KafkaListenerService(
@@ -78,7 +79,6 @@ namespace Infra.Events.Kafka
                 {
                     try
                     {
-
                         var message = consumer.Consume(TimeSpan.FromMilliseconds(150));
 
                         if (message is null)
