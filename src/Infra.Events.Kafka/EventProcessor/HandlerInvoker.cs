@@ -17,7 +17,8 @@ namespace Infra.Events.Kafka
         private readonly ILogger<HandlerInvoker> _logger;
         private readonly IOptions<SubscriberConfig> _options;
         private readonly Assembly[] _scanningAssemblies;
-        private static  JsonSerializerSettings _settings = new JsonSerializerSettings
+
+        private static JsonSerializerSettings _settings = new JsonSerializerSettings
         {
             Error = (e, args) => args.ErrorContext.Handled = true,
             ContractResolver = PrivateSetterResolver.Instance,
@@ -56,11 +57,14 @@ namespace Infra.Events.Kafka
 
             var handlerType = typeof(IMessageHandler<>).MakeGenericType(type);
             var handlersType = typeof(IEnumerable<>).MakeGenericType(handlerType);
-            var handlers = (IEnumerable)_scope.Resolve(handlersType);
-
-            foreach (dynamic handler in handlers)
+            using (var scope = _scope.BeginLifetimeScope())
             {
-                await handler.Handle((dynamic)@event, headers);
+                var handlers = (IEnumerable) scope.Resolve(handlersType);
+
+                foreach (dynamic handler in handlers)
+                {
+                    await handler.Handle((dynamic) @event, headers);
+                }
             }
         }
 
