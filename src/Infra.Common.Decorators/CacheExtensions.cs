@@ -37,6 +37,27 @@ namespace Infra.Common.Decorators
             }
         }
 
+        public static async Task<T> CreateAsync<T>(this IDistributedCache source,
+            string key,
+            Func<DistributedCacheEntryOptions, Task<T>> factory,
+            CancellationToken cancellationToken)
+        {
+            var options = new DistributedCacheEntryOptions();
+
+            // 1. invoke factory method to create new object
+            var result = await factory(options);
+
+            if (result == null)
+            {
+                return default;
+            }
+
+            // 2. store the newly created object into cache
+            await source.CreateEntry(key, result, options, cancellationToken);
+
+            return result;
+        }
+
         private static Task CreateEntry(this IDistributedCache cache, string key, object value, DistributedCacheEntryOptions options, CancellationToken cancellationToken)
         {
             var jsonEntry = JsonConvert.SerializeObject(value);
