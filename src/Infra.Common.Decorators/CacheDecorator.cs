@@ -23,16 +23,23 @@ namespace Infra.Common.Decorators
 
             if (parameters is CacheableQuery<TQuery, TResult> cache)
             {
-                return _cache.GetOrCreateAsync(
-                        cache.GetKey(),
-                            (options) =>
-                            {
-                                options.AbsoluteExpiration = cache.AbsoluteExpiration;
-                                // options.SlidingExpiration = cache.SlidingExpiration;
+                if (!cache.ReValidate)
+                {
+                    return _cache.GetOrCreateAsync(
+                            cache.GetKey(),
+                                (options) =>
+                                {
+                                    options.AbsoluteExpiration = cache.AbsoluteExpiration;
+                                    // options.SlidingExpiration = cache.SlidingExpiration;
 
-                                return _innerHandler.HandleAsync(parameters);
-                            },
-                            cts.Token);
+                                    return _innerHandler.HandleAsync(parameters);
+                                },
+                                cts.Token);
+                }
+                else
+                {
+                    return _innerHandler.HandleAsync(parameters);
+                }
             }
             else
             {

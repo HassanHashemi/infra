@@ -17,6 +17,11 @@ namespace Infra.Queries
         /// </summary>
         public virtual TimeSpan? SlidingExpiration => TimeSpan.FromDays(1);
 
+        /// <summary>
+        /// When is True, just handler will be executed and cache will be updated
+        /// </summary>
+        public virtual bool ReValidate { get; set; }
+
         public virtual string GetKey()
         {
             var typeInfo = GetType();
