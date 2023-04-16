@@ -33,6 +33,7 @@ namespace Orders.Domain.Events
     [Topic(Name = "Ota.FlightOrderItem1")]
     public class FlightOrderItemStateChanged : DomainEvent
     {
+        public string Value { get; set; }
         //public SmppGatewayMessage()
         //{
 
@@ -67,14 +68,14 @@ namespace Sample01
             {
                 builder.AddKafka(p =>
                 {
-                    p.BootstrapServers = "192.168.203.4:30044,192.168.203.4:30045";
+                    p.BootstrapServers = "91.107.239.221:30049";
                 },
                 consumer =>
                 {
                     consumer.OffsetResetType = AutoOffsetReset.Earliest;
                     consumer.GroupId = "gw-test37";
                     //consumer.Topics = new[] { typeof(SmppGatewayMessage).FullName };
-                    consumer.BootstrappServers = "192.168.203.4:30044,192.168.203.4:30045";
+                    consumer.BootstrappServers = "91.107.239.221:30049";
                     consumer.EventAssemblies = new[] { typeof(Program).Assembly };
                     consumer.MaxPollIntervalMs = 50_000;
                     consumer.SessionTimeoutMs = 50_000;
@@ -84,14 +85,15 @@ namespace Sample01
 
         public static async Task Main(string[] args)
         {
-            await CreateHostBuilder(args).RunConsoleAsync();
+            //await CreateHostBuilder(args).RunConsoleAsync();
+            //return;
+
+            var bus = new KafkaEventBus(new KafkaProducerConfig
+            {
+                BootstrapServers = "91.107.239.221:30049"
+            });
+            await bus.Execute(new FlightOrderItemStateChanged() { Value = "123" });
             return;
-
-            //var bus = new KafkaEventBus(new KafkaProducerConfig
-            //{
-            //    BootstrapServers = "192.168.203.4:30044"
-            //});
-
             //var dict = new Dictionary<string, string>()
             //{
             //    { "name", "Pear" }
