@@ -1,4 +1,5 @@
-﻿using Infra.Queries;
+﻿using System.Text;
+using Infra.Queries;
 using Microsoft.Extensions.Caching.Distributed;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,16 +24,29 @@ namespace Infra.Common.Decorators
 
             if (parameters is CacheableQuery<TQuery, TResult> cache)
             {
-                return _cache.GetOrCreateAsync(
+                if (!cache.ReValidate)
+                {
+                    return _cache.GetOrCreateAsync(
                         cache.GetKey(),
-                            (options) =>
-                            {
-                                options.AbsoluteExpiration = cache.AbsoluteExpiration;
-                                // options.SlidingExpiration = cache.SlidingExpiration;
-
-                                return _innerHandler.HandleAsync(parameters);
-                            },
-                            cts.Token);
+                        (options) =>
+                        {
+                            options.AbsoluteExpiration = cache.AbsoluteExpiration;
+                            // options.SlidingExpiration = cache.SlidingExpiration;
+                            return _innerHandler.HandleAsync(parameters);
+                        },
+                        cts.Token);
+                }
+                else
+                {
+                    return _cache.CreateAsync(
+                        cache.GetKey(),
+                        (options) =>
+                        {
+                            options.AbsoluteExpiration = cache.AbsoluteExpiration;
+                            return _innerHandler.HandleAsync(parameters);
+                        },
+                        cts.Token);
+                }
             }
             else
             {
