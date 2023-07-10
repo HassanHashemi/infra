@@ -86,11 +86,11 @@ namespace Infra.Events.Kafka
                     {
                         var message = consumer.Consume(TimeSpan.FromMilliseconds(150));
 
-                        if (_config.PreMessageHandlingHandler != null)
-                            await _config.PreMessageHandlingHandler(_serviceProvider);
-
                         if (message is null)
                             continue;
+
+                        if (_config.PreMessageHandlingHandler != null)
+                            await _config.PreMessageHandlingHandler(_serviceProvider);
 
                         var eventData = JsonConvert.DeserializeObject<Event>(message.Message.Value, _serializerSettings);
                         await _handlerFactory.Invoke(
