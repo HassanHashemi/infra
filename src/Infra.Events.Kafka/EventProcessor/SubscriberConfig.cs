@@ -18,7 +18,7 @@ namespace Infra.Events.Kafka
         public int? SessionTimeoutMs { get; set; }
         public int? MaxPollIntervalMs { get; set; }
         public Assembly[] EventAssemblies { get; set; }
-        public Func<IServiceProvider, ValueTask<CultureInfo>> CultureInfoFunc { get; set; } = null;
+        public Func<IServiceProvider, ValueTask<CultureInfo>> PreMessageHandlingHandler { get; set; } = null;
 
         public bool IsValid
         {

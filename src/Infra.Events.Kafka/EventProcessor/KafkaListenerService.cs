@@ -86,8 +86,8 @@ namespace Infra.Events.Kafka
                     {
                         var message = consumer.Consume(TimeSpan.FromMilliseconds(150));
 
-                        if (_config.CultureInfoFunc != null)
-                            await _config.CultureInfoFunc(_serviceProvider);
+                        if (_config.PreMessageHandlingHandler != null)
+                            await _config.PreMessageHandlingHandler(_serviceProvider);
 
                         if (message is null)
                             continue;
