@@ -16,11 +16,13 @@ namespace Infra.Events.Kafka
     public class KafkaListenerService : BackgroundService
     {
         private bool _consuming = true;
-        
+
         private readonly ILogger<KafkaListenerService> _logger;
         private readonly SubscriberConfig _config;
         private readonly HandlerInvoker _handlerFactory;
-        private static JsonSerializerSettings _serializerSettings = new JsonSerializerSettings
+        private readonly IServiceProvider _serviceProvider;
+
+        private static readonly JsonSerializerSettings _serializerSettings = new JsonSerializerSettings
         {
             ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor
         };
@@ -28,15 +30,17 @@ namespace Infra.Events.Kafka
         public KafkaListenerService(
             ILogger<KafkaListenerService> logger,
             HandlerInvoker handlerFactory,
-            IOptions<SubscriberConfig> subscriberConfig) : this(logger, handlerFactory, subscriberConfig.Value)
+            IOptions<SubscriberConfig> subscriberConfig,
+            IServiceProvider serviceProvider) : this(logger, handlerFactory, subscriberConfig.Value, serviceProvider)
         {
-            
+
         }
 
         public KafkaListenerService(
             ILogger<KafkaListenerService> logger,
             HandlerInvoker handlerFactory,
-            SubscriberConfig subscriberConfig)
+            SubscriberConfig subscriberConfig,
+            IServiceProvider serviceProvider)
         {
             if (!subscriberConfig.IsValid)
             {
@@ -45,6 +49,7 @@ namespace Infra.Events.Kafka
 
             this._logger = logger;
             this._config = subscriberConfig;
+            this._serviceProvider = serviceProvider;
             this._handlerFactory = handlerFactory;
 
             if (subscriberConfig.Topics == null || !subscriberConfig.Topics.Any())
@@ -80,6 +85,9 @@ namespace Infra.Events.Kafka
                     try
                     {
                         var message = consumer.Consume(TimeSpan.FromMilliseconds(150));
+
+                        if (_config.CultureInfoFunc != null)
+                            await _config.CultureInfoFunc(_serviceProvider);
 
                         if (message is null)
                             continue;
