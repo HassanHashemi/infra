@@ -1,7 +1,7 @@
 ﻿using Confluent.Kafka;
+using Domain;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -18,8 +18,8 @@ namespace Infra.Events.Kafka
         public int? SessionTimeoutMs { get; set; }
         public int? MaxPollIntervalMs { get; set; }
         public Assembly[] EventAssemblies { get; set; }
-        public Func<IServiceProvider, ValueTask<CultureInfo>> PreMessageHandlingHandler { get; set; } = null;
-
+        public Func<IServiceProvider, Event, Dictionary<string, string>, ValueTask> PreMessageHandlingHandler { get; set; } = null;
+        
         public bool IsValid
         {
             get
