@@ -89,17 +89,20 @@ namespace Infra.Events.Kafka
                         if (message is null)
                             continue;
 
-                        if (_config.PreMessageHandlingHandler != null)
-                            await _config.PreMessageHandlingHandler(_serviceProvider);
-
                         var eventData = JsonConvert.DeserializeObject<Event>(message.Message.Value, _serializerSettings);
+
+                        var headers = message.Message.Headers.ToDictionary(
+                                k => k.Key,
+                                v => Encoding.UTF8.GetString(v.GetValueBytes()))
+                            .ToDictionary(d => d.Key, v => v.Value);
+
+                        if (_config.PreMessageHandlingHandler != null)
+                            await _config.PreMessageHandlingHandler(_serviceProvider, eventData, headers);
+
                         await _handlerFactory.Invoke(
                             eventData.EventName,
                             message.Message.Value,
-                            message.Message.Headers.ToDictionary(
-                                k => k.Key,
-                                v => Encoding.UTF8.GetString(v.GetValueBytes()))
-                            .ToDictionary(d => d.Key, v => v.Value));
+                            headers);
 
                         consumer.Commit(message);
 

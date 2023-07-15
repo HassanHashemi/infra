@@ -79,7 +79,8 @@ namespace Sample01
                     consumer.EventAssemblies = new[] { typeof(Program).Assembly };
                     consumer.MaxPollIntervalMs = 50_000;
                     consumer.SessionTimeoutMs = 50_000;
-                    ///consumer.AutoOffsetCommit = false;
+                    consumer.PreMessageHandlingHandler = (provider, @event, headers) => ValueTask.CompletedTask;
+                    ///consumer.AutoOffsetCommit = false;,
                 });
             });
 
