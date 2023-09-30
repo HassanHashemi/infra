@@ -9,7 +9,7 @@ namespace Infra.Common.Decorators
         private readonly ICommandHandler<TCommand, TResult> _decoratedHandler;
         private readonly ICommandValidator<TCommand> _validator;
 
-        public ValidationCommandHandlerDecorator(ICommandHandler<TCommand, TResult> decoratedHandler, ICommandValidator<TCommand> validator)
+        public ValidationCommandHandlerDecorator(ICommandHandler<TCommand, TResult> decoratedHandler, ICommandValidator<TCommand> validator = null)
         {
             _decoratedHandler = decoratedHandler;
             _validator = validator;
@@ -17,7 +17,9 @@ namespace Infra.Common.Decorators
 
         public async Task<TResult> HandleAsync(TCommand command)
         {
-            await _validator.ValidateAsync(command);
+            if (_validator != null)
+                await _validator.ValidateAsync(command);
+
             return await _decoratedHandler.HandleAsync(command);
         }
     }
