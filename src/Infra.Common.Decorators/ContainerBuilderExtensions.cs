@@ -1,14 +1,37 @@
 ﻿using Autofac;
 using Infra.Commands;
 using Infra.Queries;
+using Microsoft.Extensions.Options;
 using System.Reflection;
 
 namespace Infra.Common.Decorators
 {
     public static class ContainerBuilderExtensions
     {
-        public static ContainerBuilder AddCommandQuery(this ContainerBuilder builder, params Assembly[] scannedAssemblies)
+        public static ContainerBuilder AddCommandQuery(
+            this ContainerBuilder builder,
+            CommandProcessorOptions commandProcessorOptions = null,
+            QueryProcessorOptions queryProcessorOptions = null,
+            params Assembly[] scannedAssemblies)
         {
+            builder
+                .RegisterInstance(Options.Create(commandProcessorOptions ?? new CommandProcessorOptions
+                {
+                    EndServiceKey = "4"
+                }))
+                .As<IOptions<CommandProcessorOptions>>();
+
+            builder
+                .RegisterInstance(Options.Create(queryProcessorOptions ?? new QueryProcessorOptions
+                {
+                    EndServiceKey = "4"
+                }))
+                .As<IOptions<QueryProcessorOptions>>();
+
+            builder
+                .RegisterInstance(Options.Create<FuncDecoratorOptions>(null))
+                .As<IOptions<FuncDecoratorOptions>>();
+
             builder.RegisterType<QueryProcessor>().As<IQueryProcessor>()
                 .InstancePerLifetimeScope();
 

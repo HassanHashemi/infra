@@ -164,7 +164,7 @@ namespace Sample01
             services.AddDistributedMemoryCache();
             var builder = new ContainerBuilder();
             builder.Populate(services);
-            AddCommandQuery(builder, typeof(Program).Assembly);
+            builder.AddCommandQuery(typeof(Program).Assembly);
             var provider = builder.Build();
             var processor = provider.Resolve<ICommandProcessor>();
             //var result = processor.ExecuteAsync<TestCommand, string>(new TestCommand()).Result;
