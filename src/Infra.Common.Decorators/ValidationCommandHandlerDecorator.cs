@@ -1,5 +1,5 @@
-﻿using System.Threading.Tasks;
-using Infra.Commands;
+﻿using Infra.Commands;
+using System.Threading.Tasks;
 
 namespace Infra.Common.Decorators
 {

@@ -256,6 +256,7 @@ namespace Sample01
                    fromKey: "3",
                    toKey: "4")
                    .InstancePerLifetimeScope();
+
             return builder;
         }
     }
