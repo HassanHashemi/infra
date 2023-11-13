@@ -3,6 +3,7 @@ using Infra.Commands;
 using Infra.Queries;
 using Microsoft.Extensions.Options;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace Infra.Common.Decorators
 {
@@ -12,6 +13,7 @@ namespace Infra.Common.Decorators
             this ContainerBuilder builder,
             CommandProcessorOptions commandProcessorOptions = null,
             QueryProcessorOptions queryProcessorOptions = null,
+            FuncDecoratorOptions funcDecoratorOptions = null,
             params Assembly[] scannedAssemblies)
         {
             builder
@@ -29,7 +31,10 @@ namespace Infra.Common.Decorators
                 .As<IOptions<QueryProcessorOptions>>();
 
             builder
-                .RegisterInstance(Options.Create<FuncDecoratorOptions>(null))
+                .RegisterInstance(Options.Create(funcDecoratorOptions ?? new FuncDecoratorOptions
+                {
+                    Handler = (e, c) => Task.CompletedTask
+                }))
                 .As<IOptions<FuncDecoratorOptions>>();
 
             builder.RegisterType<QueryProcessor>().As<IQueryProcessor>()

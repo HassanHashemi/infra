@@ -164,7 +164,7 @@ namespace Sample01
             services.AddDistributedMemoryCache();
             var builder = new ContainerBuilder();
             builder.Populate(services);
-            builder.AddCommandQuery(typeof(Program).Assembly);
+            builder.AddCommandQueryInternal(typeof(Program).Assembly);
             var provider = builder.Build();
             var processor = provider.Resolve<ICommandProcessor>();
             //var result = processor.ExecuteAsync<TestCommand, string>(new TestCommand()).Result;
@@ -172,90 +172,93 @@ namespace Sample01
             var r = await queryProcessor.ExecuteAsync(new TestQuery());
         }
 
-        public static ContainerBuilder AddCommandQuery(this ContainerBuilder builder, params Assembly[] scannedAssemblies)
+        public static ContainerBuilder AddCommandQueryInternal(this ContainerBuilder builder, params Assembly[] scannedAssemblies)
         {
-            builder.RegisterType<SyncEventBus>()
-                .InstancePerLifetimeScope();
+            builder.AddSyncEventHandlers(scannedAssemblies);
+            builder.AddCommandQuery(scannedAssemblies: scannedAssemblies);
 
-            builder
-                .RegisterAssemblyTypes(scannedAssemblies)
-                .AsClosedTypesOf(typeof(IEventHandler<>), "1")
-                    .AsImplementedInterfaces()
-                    .InstancePerLifetimeScope();
+           // builder.RegisterType<SyncEventBus>()
+           //     .InstancePerLifetimeScope();
 
-            builder.RegisterType<QueryProcessor>().As<IQueryProcessor>()
-                .InstancePerLifetimeScope();
+           // builder
+           //     .RegisterAssemblyTypes(scannedAssemblies)
+           //     .AsClosedTypesOf(typeof(IEventHandler<>), "1")
+           //         .AsImplementedInterfaces()
+           //         .InstancePerLifetimeScope();
 
-            builder
-                .RegisterAssemblyTypes(scannedAssemblies)
-                .AsClosedTypesOf(typeof(IQueryHandler<,>), "1")
-                    .AsImplementedInterfaces()
-                    .InstancePerLifetimeScope();
+           // builder.RegisterType<QueryProcessor>().As<IQueryProcessor>()
+           //     .InstancePerLifetimeScope();
 
-            builder
-               .RegisterGenericDecorator(
-                   typeof(CacheDecorator<,>),
-                   typeof(IQueryHandler<,>),
-               fromKey: "1",
-               toKey: "2")
-               .InstancePerLifetimeScope();
+           // builder
+           //     .RegisterAssemblyTypes(scannedAssemblies)
+           //     .AsClosedTypesOf(typeof(IQueryHandler<,>), "1")
+           //         .AsImplementedInterfaces()
+           //         .InstancePerLifetimeScope();
 
-            builder
-               .RegisterGenericDecorator(
-                   typeof(QueryFuncDecorator<,>),
-                   typeof(IQueryHandler<,>),
-               fromKey: "2",
-               toKey: "3")
-               .InstancePerLifetimeScope();
+           // builder
+           //    .RegisterGenericDecorator(
+           //        typeof(CacheDecorator<,>),
+           //        typeof(IQueryHandler<,>),
+           //    fromKey: "1",
+           //    toKey: "2")
+           //    .InstancePerLifetimeScope();
 
-            builder
-                .RegisterGenericDecorator(
-                    typeof(QueryLoggerDecorator<,>),
-                    typeof(IQueryHandler<,>),
-                fromKey: "3",
-                toKey: "4")
-                .InstancePerLifetimeScope();
+           // builder
+           //    .RegisterGenericDecorator(
+           //        typeof(QueryFuncDecorator<,>),
+           //        typeof(IQueryHandler<,>),
+           //    fromKey: "2",
+           //    toKey: "3")
+           //    .InstancePerLifetimeScope();
 
-            builder
-                .RegisterType<CommandProcessor>()
-                .As<ICommandProcessor>()
-                .InstancePerLifetimeScope();
+           // builder
+           //     .RegisterGenericDecorator(
+           //         typeof(QueryLoggerDecorator<,>),
+           //         typeof(IQueryHandler<,>),
+           //     fromKey: "3",
+           //     toKey: "4")
+           //     .InstancePerLifetimeScope();
 
-            builder
-                .RegisterAssemblyTypes(scannedAssemblies)
-                .AsClosedTypesOf(typeof(ICommandHandler<,>), "1")
-                    .AsImplementedInterfaces()
-                    .InstancePerLifetimeScope();
+           // builder
+           //     .RegisterType<CommandProcessor>()
+           //     .As<ICommandProcessor>()
+           //     .InstancePerLifetimeScope();
 
-            builder
-                .RegisterAssemblyTypes(scannedAssemblies)
-                .AsClosedTypesOf(typeof(ICommandValidator<>))
-                    .AsImplementedInterfaces()
-                    .InstancePerLifetimeScope();
+           // builder
+           //     .RegisterAssemblyTypes(scannedAssemblies)
+           //     .AsClosedTypesOf(typeof(ICommandHandler<,>), "1")
+           //         .AsImplementedInterfaces()
+           //         .InstancePerLifetimeScope();
 
-            builder
-                .RegisterGenericDecorator(
-                    typeof(ValidationCommandHandlerDecorator<,>),
-                    typeof(ICommandHandler<,>),
-                        fromKey: "1",
-                        toKey: "2")
-                        .InstancePerLifetimeScope();
+           // builder
+           //     .RegisterAssemblyTypes(scannedAssemblies)
+           //     .AsClosedTypesOf(typeof(ICommandValidator<>))
+           //         .AsImplementedInterfaces()
+           //         .InstancePerLifetimeScope();
 
-            builder
-               .RegisterGenericDecorator(
-                   typeof(CommandFuncDecorator<,>),
-                   typeof(ICommandHandler<,>),
-                       fromKey: "2",
-                       toKey: "3")
-                       .InstancePerLifetimeScope();
+           // builder
+           //     .RegisterGenericDecorator(
+           //         typeof(ValidationCommandHandlerDecorator<,>),
+           //         typeof(ICommandHandler<,>),
+           //             fromKey: "1",
+           //             toKey: "2")
+           //             .InstancePerLifetimeScope();
 
-            builder
-           .RegisterGenericDecorator(
-               typeof(CommandLoggerDecorator<,>),
-               typeof(ICommandHandler<,>),
-                   fromKey: "3",
-                   toKey: "4")
-                   .InstancePerLifetimeScope();
+           // builder
+           //    .RegisterGenericDecorator(
+           //        typeof(CommandFuncDecorator<,>),
+           //        typeof(ICommandHandler<,>),
+           //            fromKey: "2",
+           //            toKey: "3")
+           //            .InstancePerLifetimeScope();
+
+           // builder
+           //.RegisterGenericDecorator(
+           //    typeof(CommandLoggerDecorator<,>),
+           //    typeof(ICommandHandler<,>),
+           //        fromKey: "3",
+           //        toKey: "4")
+           //        .InstancePerLifetimeScope();
 
             return builder;
         }
