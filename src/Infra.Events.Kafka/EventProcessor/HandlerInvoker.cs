@@ -5,7 +5,6 @@ using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -16,23 +15,21 @@ namespace Infra.Events.Kafka
         private readonly ILifetimeScope _scope;
         private readonly ILogger<HandlerInvoker> _logger;
         private readonly IOptions<SubscriberConfig> _options;
+        private readonly IOptions<KafkaOptions> _kafkaOptions;
         private readonly Assembly[] _scanningAssemblies;
-
-        private static JsonSerializerSettings _settings = new JsonSerializerSettings
-        {
-            Error = (e, args) => args.ErrorContext.Handled = true,
-            ContractResolver = PrivateSetterResolver.Instance,
-            ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor
-        };
+        private readonly IJsonSerializer _jsonSerializer;
 
         public HandlerInvoker(
             ILifetimeScope scope,
             ILogger<HandlerInvoker> logger,
+            IOptions<KafkaOptions> kafkaOptions,
             IOptions<SubscriberConfig> options)
         {
             this._scope = scope;
             this._logger = logger;
+            this._kafkaOptions = kafkaOptions;
             this._options = options;
+            this._jsonSerializer = _kafkaOptions.Value.Serializer ?? new DefaultNewtonSoftJsonSerializer();
             this._scanningAssemblies = options.Value.EventAssemblies;
         }
 
@@ -46,8 +43,8 @@ namespace Infra.Events.Kafka
                 return;
             }
 
-            var @event = JsonConvert.DeserializeObject(eventData, type, _settings);
-
+            var @event = _jsonSerializer.Deserialize(eventData, type);
+            
             if (@event == null)
             {
                 _logger.LogError($"Could not deserialize to {eventName} payload: {eventData}");

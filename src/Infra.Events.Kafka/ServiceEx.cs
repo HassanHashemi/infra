@@ -11,10 +11,17 @@ namespace Infra.Events.Kafka
 {
     public static class ServiceEx
     {
-        public static void AddKafka(this ContainerBuilder builder,
+        public static void AddKafka(
+            this ContainerBuilder builder,
             Action<KafkaProducerConfig> producerConfig,
-            Action<SubscriberConfig> subscriberConfig)
+            Action<SubscriberConfig> subscriberConfig,
+            KafkaOptions options = null)
         {
+            builder
+               .RegisterInstance(Options.Create(options ?? new KafkaOptions()))
+               .As<IOptions<KafkaOptions>>()
+               .InstancePerLifetimeScope();
+
             if (producerConfig != null)
             {
                 builder.AddKafkaProducer(producerConfig);
@@ -42,7 +49,9 @@ namespace Infra.Events.Kafka
             builder.RegisterInstance(Options.Create(config));
         }
 
-        public static void AddKafkaConsumer(this ContainerBuilder builder, Action<SubscriberConfig> configurator)
+        public static void AddKafkaConsumer(
+            this ContainerBuilder builder,
+            Action<SubscriberConfig> configurator)
         {
             Guard.NotNull(configurator, nameof(configurator));
 
@@ -80,7 +89,7 @@ namespace Infra.Events.Kafka
             }
 
             builder.RegisterInstance(Options.Create(config));
-
+            
             builder.RegisterType<KafkaListenerService>()
                 .As<IHostedService>()
                 .InstancePerDependency();

@@ -4,7 +4,6 @@ using Domain;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using System;
 using System.Linq;
 using System.Text;
@@ -20,18 +19,16 @@ namespace Infra.Events.Kafka
         private readonly ILogger<KafkaListenerService> _logger;
         private readonly SubscriberConfig _config;
         private readonly HandlerInvoker _handlerFactory;
+        private readonly KafkaOptions _options;
+        private readonly IJsonSerializer _serializer;
         private readonly IServiceProvider _serviceProvider;
-
-        private static readonly JsonSerializerSettings _serializerSettings = new JsonSerializerSettings
-        {
-            ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor
-        };
 
         public KafkaListenerService(
             ILogger<KafkaListenerService> logger,
             HandlerInvoker handlerFactory,
             IOptions<SubscriberConfig> subscriberConfig,
-            IServiceProvider serviceProvider) : this(logger, handlerFactory, subscriberConfig.Value, serviceProvider)
+            IOptions<KafkaOptions> options,
+            IServiceProvider serviceProvider) : this(logger, handlerFactory, subscriberConfig.Value, options.Value, serviceProvider)
         {
 
         }
@@ -40,6 +37,7 @@ namespace Infra.Events.Kafka
             ILogger<KafkaListenerService> logger,
             HandlerInvoker handlerFactory,
             SubscriberConfig subscriberConfig,
+            KafkaOptions options,
             IServiceProvider serviceProvider)
         {
             if (!subscriberConfig.IsValid)
@@ -51,6 +49,8 @@ namespace Infra.Events.Kafka
             this._config = subscriberConfig;
             this._serviceProvider = serviceProvider;
             this._handlerFactory = handlerFactory;
+            this._options = options;
+            this._serializer = options.Serializer ?? new DefaultNewtonSoftJsonSerializer();
 
             if (subscriberConfig.Topics == null || !subscriberConfig.Topics.Any())
             {
@@ -58,7 +58,7 @@ namespace Infra.Events.Kafka
             }
             else
             {
-                _logger.LogInformation($"subscribing to {JsonConvert.SerializeObject(subscriberConfig.Topics)}");
+                _logger.LogInformation($"subscribing to {_serializer.Serialize(subscriberConfig.Topics)}");
             }
         }
 
@@ -89,7 +89,7 @@ namespace Infra.Events.Kafka
                         if (message is null)
                             continue;
 
-                        var eventData = JsonConvert.DeserializeObject<Event>(message.Message.Value, _serializerSettings);
+                        var eventData = _serializer.Deserialize<Event>(message.Message.Value);
 
                         var headers = message.Message.Headers.ToDictionary(
                                 k => k.Key,

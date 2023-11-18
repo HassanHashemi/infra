@@ -3,7 +3,6 @@ using Domain;
 using Infra.Eevents;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -17,21 +16,18 @@ namespace Infra.Events.Kafka
     {
         private readonly IProducer<Null, string> _producer;
         private readonly ILogger<KafkaEventBus> _logger;
-        private static JsonSerializerSettings _jsonSerializerSettings = new JsonSerializerSettings 
-        {
-            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-        };
-
-        public KafkaEventBus(KafkaProducerConfig config) : this(Options.Create(config), null)
-        {
-        }
-
-        public KafkaEventBus(IOptions<KafkaProducerConfig> config, ILogger<KafkaEventBus> logger)
+        private readonly IJsonSerializer _serializer;
+        
+        public KafkaEventBus(
+            IOptions<KafkaProducerConfig> config, 
+            ILogger<KafkaEventBus> logger,
+            IOptions<KafkaOptions> options)
         {
             Guard.NotNull(config.Value, nameof(config));
             var producerConfig = config.Value;
 
             _logger = logger;
+            _serializer = options.Value.Serializer ?? new DefaultNewtonSoftJsonSerializer();
             _producer = new ProducerBuilder<Null, string>(new ProducerConfig
             {
                 BootstrapServers = producerConfig.BootstrapServers,
@@ -46,7 +42,7 @@ namespace Infra.Events.Kafka
 
             var message = new Message<Null, string>
             {
-                Value = JsonConvert.SerializeObject(@event, _jsonSerializerSettings)
+                Value = _serializer.Serialize(@event)
             };
             
             AddHeaders(headers, message);
@@ -60,7 +56,7 @@ namespace Infra.Events.Kafka
         {
             Guard.NotNull(@event, nameof(@event));
 
-            var eventData = JsonConvert.SerializeObject(@event, _jsonSerializerSettings);
+            var eventData = _serializer.Serialize(@event);
             var message = new Message<Null, string>
             {
                 Value = eventData
