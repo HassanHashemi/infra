@@ -117,11 +117,11 @@ namespace Sample01
             //await CreateHostBuilder(args).RunConsoleAsync();
             //return;
 
-            var bus = new KafkaEventBus(new KafkaProducerConfig
-            {
-                BootstrapServers = "95.17.134.21:3249"
-            });
-            await bus.Execute(new FlightOrderItemStateChanged() { Value = "123" });
+            //var bus = new KafkaEventBus(new KafkaProducerConfig
+            //{
+            //    BootstrapServers = "95.17.134.21:3249"
+            //});
+            //await bus.Execute(new FlightOrderItemStateChanged() { Value = "123" });
             //return;
             //var dict = new Dictionary<string, string>()
             //{

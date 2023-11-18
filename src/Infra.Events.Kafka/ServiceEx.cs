@@ -19,8 +19,7 @@ namespace Infra.Events.Kafka
         {
             builder
                .RegisterInstance(Options.Create(options ?? new KafkaOptions()))
-               .As<IOptions<KafkaOptions>>()
-               .InstancePerLifetimeScope();
+               .As<IOptions<KafkaOptions>>();
 
             if (producerConfig != null)
             {
