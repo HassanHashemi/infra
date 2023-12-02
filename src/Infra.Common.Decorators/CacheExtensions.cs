@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System;
+using Infra.Serialization.Json;
 
 namespace Infra.Common.Decorators
 {
@@ -11,12 +12,13 @@ namespace Infra.Common.Decorators
         public static async Task<T> GetOrCreateAsync<T>(this IDistributedCache source,
             string key,
             Func<DistributedCacheEntryOptions, Task<T>> factory,
+            IJsonSerializer serializer,
             CancellationToken cancellationToken)
         {
             var cachedResult = await source.GetStringAsync(key, cancellationToken);
             if (cachedResult != null)
             {
-                return JsonConvert.DeserializeObject<T>(cachedResult);
+                return serializer.Deserialize<T>(cachedResult);
             }
             else
             {
@@ -31,7 +33,7 @@ namespace Infra.Common.Decorators
                 }
 
                 // 2. store the newly created object into cache
-                await source.CreateEntry(key, result, options, cancellationToken);
+                await source.CreateEntry(key, result, options, serializer, cancellationToken);
 
                 return result;
             }
@@ -40,6 +42,7 @@ namespace Infra.Common.Decorators
         public static async Task<T> CreateAsync<T>(this IDistributedCache source,
             string key,
             Func<DistributedCacheEntryOptions, Task<T>> factory,
+            IJsonSerializer serializer,
             CancellationToken cancellationToken)
         {
             var options = new DistributedCacheEntryOptions();
@@ -53,14 +56,14 @@ namespace Infra.Common.Decorators
             }
 
             // 2. store the newly created object into cache
-            await source.CreateEntry(key, result, options, cancellationToken);
+            await source.CreateEntry(key, result, options, serializer, cancellationToken);
 
             return result;
         }
 
-        private static Task CreateEntry(this IDistributedCache cache, string key, object value, DistributedCacheEntryOptions options, CancellationToken cancellationToken)
+        private static Task CreateEntry(this IDistributedCache cache, string key, object value, DistributedCacheEntryOptions options, IJsonSerializer serializer, CancellationToken cancellationToken)
         {
-            var jsonEntry = JsonConvert.SerializeObject(value);
+            var jsonEntry = serializer.Serialize(value);
 
             return cache.SetStringAsync(key, jsonEntry, options, cancellationToken);
         }

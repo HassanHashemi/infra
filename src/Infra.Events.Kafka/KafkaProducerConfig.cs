@@ -1,4 +1,6 @@
-﻿namespace Infra.Events.Kafka
+﻿using Infra.Serialization.Json;
+
+namespace Infra.Events.Kafka
 {
     public class KafkaProducerConfig
     {

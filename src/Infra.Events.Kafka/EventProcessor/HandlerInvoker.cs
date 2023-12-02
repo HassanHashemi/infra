@@ -1,4 +1,5 @@
 ﻿using Autofac;
+using Infra.Serialization.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;

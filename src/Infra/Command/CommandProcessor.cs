@@ -2,6 +2,7 @@
 using Infra.Queries;
 using Microsoft.Extensions.Options;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Infra.Commands
@@ -20,14 +21,14 @@ namespace Infra.Commands
             _options = options.Value;
         }
 
-        public Task<TResult> ExecuteAsync<TCommand, TResult>(TCommand command)
+        public Task<TResult> ExecuteAsync<TCommand, TResult>(TCommand command, CancellationToken cancellationToken = default)
         {
             var handlerType = typeof(ICommandHandler<,>)
                 .MakeGenericType(command.GetType(), typeof(TResult));
 
             dynamic handler = _container.ResolveKeyed(_options.EndServiceKey, handlerType);
 
-            return handler.HandleAsync(command);
+            return handler.HandleAsync(command, cancellationToken);
         }
     }
 }

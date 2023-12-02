@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Infra.Common.Decorators
@@ -18,12 +19,12 @@ namespace Infra.Common.Decorators
             _inner = inner;
         }
 
-        public async Task<TResult> HandleAsync(TQuery parameters)
+        public async Task<TResult> HandleAsync(TQuery parameters, CancellationToken cts)
         {
             var timer = new Stopwatch();
 
             timer.Start();
-            var result = await _inner.HandleAsync(parameters);
+            var result = await _inner.HandleAsync(parameters, cts);
             timer.Stop();
 
             Log(parameters, timer);

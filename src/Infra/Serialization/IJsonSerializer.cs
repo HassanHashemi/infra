@@ -1,11 +1,11 @@
 ﻿using System;
 
-namespace Infra.Events.Kafka
+namespace Infra.Serialization.Json
 {
     public interface IJsonSerializer
     {
         public string Serialize(object input);
-        public T Deserialize<T>(string json) where T : class;
+        public T Deserialize<T>(string json);
         public object Deserialize(string json, Type type);
     }
 }

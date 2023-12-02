@@ -2,7 +2,7 @@
 using Newtonsoft.Json.Serialization;
 using System.Reflection;
 
-namespace Infra.Events.Kafka
+namespace Infra.Serialization.Json
 {
     public class PrivateSetterResolver : DefaultContractResolver
     {

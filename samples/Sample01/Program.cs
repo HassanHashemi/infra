@@ -7,13 +7,17 @@ using Infra.Common.Decorators;
 using Infra.Events;
 using Infra.Events.Kafka;
 using Infra.Queries;
+using Infra.Serialization.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using News.Domain;
 using Orders.Domain.Events;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Orders.Domain.Events
@@ -58,7 +62,7 @@ public class TestCommand : ICommand
 
 public class TestCommandHandler : ICommandHandler<TestCommand, string>
 {
-    public Task<string> HandleAsync(TestCommand command)
+    public Task<string> HandleAsync(TestCommand command, CancellationToken cancellationToken)
     {
         return Task.FromResult(1.ToString());
     }
@@ -71,9 +75,27 @@ public class TestQuery : IQueryResult<string>
 
 public class TestQueryHandler : IQueryHandler<TestQuery, string>
 {
-    public Task<string> HandleAsync(TestQuery parameters)
+    public Task<string> HandleAsync(TestQuery parameters, CancellationToken cts = default)
     {
         return Task.FromResult(1.ToString());
+    }
+}
+
+public class TestSerializer : IJsonSerializer
+{
+    public T Deserialize<T>(string json)
+    {
+        throw new NotImplementedException();
+    }
+
+    public object Deserialize(string json, Type type)
+    {
+        throw new NotImplementedException();
+    }
+
+    public string Serialize(object input)
+    {
+        throw new NotImplementedException();
     }
 }
 
@@ -160,7 +182,7 @@ namespace Sample01
             });
 
             services.Configure<QueryProcessorOptions>(o => o.EndServiceKey = "4");
-            services.Configure<CommandProcessorOptions>(o => o.EndServiceKey = "4");
+            services.Configure<CommandProcessorOptions>(o => o.JsonSerializer = new TestSerializer());
             services.AddDistributedMemoryCache();
             var builder = new ContainerBuilder();
             builder.Populate(services);
@@ -169,13 +191,17 @@ namespace Sample01
             var processor = provider.Resolve<ICommandProcessor>();
             //var result = processor.ExecuteAsync<TestCommand, string>(new TestCommand()).Result;
             var queryProcessor = provider.Resolve<IQueryProcessor>();
-            var r = await queryProcessor.ExecuteAsync(new TestQuery());
+            var cts = new CancellationTokenSource(1);
+            var r = await queryProcessor.ExecuteAsync(new TestQuery(), cts.Token);
         }
 
         public static ContainerBuilder AddCommandQueryInternal(this ContainerBuilder builder, params Assembly[] scannedAssemblies)
         {
             builder.AddSyncEventHandlers(scannedAssemblies);
-            builder.AddCommandQuery(scannedAssemblies: scannedAssemblies);
+            builder.AddCommandQuery(commandProcessorOptions: new CommandProcessorOptions 
+            {
+                JsonSerializer = new TestSerializer()
+            }, scannedAssemblies: scannedAssemblies);
 
            // builder.RegisterType<SyncEventBus>()
            //     .InstancePerLifetimeScope();

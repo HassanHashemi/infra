@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Options;
 using System;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Infra.Queries
@@ -21,11 +22,11 @@ namespace Infra.Queries
         }
 
         [DebuggerStepThrough]
-        public Task<TResult> ExecuteAsync<TResult>(IQueryResult<TResult> query)
+        public Task<TResult> ExecuteAsync<TResult>(IQueryResult<TResult> query, CancellationToken cancellationToken = default)
         {
             var handlerType = typeof(IQueryHandler<,>).MakeGenericType(query.GetType(), typeof(TResult));
             dynamic handler = _container.ResolveKeyed(_options.EndServiceKey, handlerType);
-            return handler.HandleAsync((dynamic)query);
+            return handler.HandleAsync((dynamic)query, cancellationToken);
         }
     }
 }

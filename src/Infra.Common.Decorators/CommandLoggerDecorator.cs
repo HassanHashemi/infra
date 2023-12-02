@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Infra.Common.Decorators
@@ -19,12 +20,12 @@ namespace Infra.Common.Decorators
             _logger = logger;
         }
 
-        public virtual async Task<TResult> HandleAsync(TCommand command)
+        public virtual async Task<TResult> HandleAsync(TCommand command, CancellationToken cancellationToken)
         {
             var timer = new Stopwatch();
 
             timer.Start();
-            var result = await _inner.HandleAsync(command);
+            var result = await _inner.HandleAsync(command, cancellationToken);
             timer.Stop();
 
             Log(command, timer);

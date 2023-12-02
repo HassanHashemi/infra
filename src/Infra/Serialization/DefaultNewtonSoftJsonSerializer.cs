@@ -1,8 +1,8 @@
 ﻿using Newtonsoft.Json;
 using System;
 
-namespace Infra.Events.Kafka
-{
+namespace Infra.Serialization.Json
+{ 
     public class DefaultNewtonSoftJsonSerializer : IJsonSerializer
     {
         private static JsonSerializerSettings _jsonSerializerSettings = new JsonSerializerSettings
@@ -17,8 +17,10 @@ namespace Infra.Events.Kafka
             ObjectCreationHandling = ObjectCreationHandling.Replace,
             ContractResolver = PrivateSetterResolver.Instance
         };
+        
+        public virtual JsonSerializerSettings Settings { get; } = _jsonSerializerSettings;
 
-        public T Deserialize<T>(string json) where T : class
+        public T Deserialize<T>(string json)
         {
             Guard.NotNullOrEmpty(json, nameof(json));
 

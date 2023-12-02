@@ -1,6 +1,7 @@
 ﻿using Autofac;
 using Infra.Commands;
 using Infra.Queries;
+using Infra.Serialization.Json;
 using Microsoft.Extensions.Options;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -19,14 +20,16 @@ namespace Infra.Common.Decorators
             builder
                 .RegisterInstance(Options.Create(commandProcessorOptions ?? new CommandProcessorOptions
                 {
-                    EndServiceKey = "4"
+                    EndServiceKey = "4",
+                    JsonSerializer = new DefaultNewtonSoftJsonSerializer()
                 }))
                 .As<IOptions<CommandProcessorOptions>>();
 
             builder
                 .RegisterInstance(Options.Create(queryProcessorOptions ?? new QueryProcessorOptions
                 {
-                    EndServiceKey = "4"
+                    EndServiceKey = "4",
+                    JsonSerializer = new DefaultNewtonSoftJsonSerializer()
                 }))
                 .As<IOptions<QueryProcessorOptions>>();
 

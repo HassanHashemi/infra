@@ -1,6 +1,7 @@
 ﻿using Confluent.Kafka;
 using Domain;
 using Infra.Eevents;
+using Infra.Serialization.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;

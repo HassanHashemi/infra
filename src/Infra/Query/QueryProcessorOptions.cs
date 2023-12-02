@@ -1,14 +1,17 @@
-﻿using System.Diagnostics.Contracts;
+﻿using Infra.Serialization.Json;
+using System;
 
 namespace Infra.Queries
 {
     public class QueryProcessorOptions
     {
-        public string EndServiceKey { get; set; } 
+        public string EndServiceKey { get; set; } = "4";
+        public IJsonSerializer JsonSerializer { get; set; }
     }
 
     public class CommandProcessorOptions
     {
-        public string EndServiceKey { get; set; }
+        public string EndServiceKey { get; set; } = "4";
+        public IJsonSerializer JsonSerializer { get; set; }
     }
 }
