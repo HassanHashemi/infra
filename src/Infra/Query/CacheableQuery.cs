@@ -22,6 +22,8 @@ namespace Infra.Queries
         /// </summary>
         public virtual bool ReValidate { get; set; }
 
+        public virtual CacheStorage Storage { get; set; } = CacheStorage.Redis;
+
         public virtual string GetKey()
         {
             var typeInfo = GetType();
