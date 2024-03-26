@@ -26,6 +26,5 @@ namespace Infra.Common.Decorators
 
             return await _innerHandler.HandleAsync(parameters, cts);
         }
-
     }
 }
