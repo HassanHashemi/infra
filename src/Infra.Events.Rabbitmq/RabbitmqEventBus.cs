@@ -2,6 +2,7 @@
 using System.Text;
 using Domain;
 using Infra.Eevents;
+using Infra.Events.Rabbitmq.Extensions;
 using Infra.Serialization.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -11,11 +12,11 @@ namespace Infra.Events.Rabbitmq;
 
 public class RabbitmqEventBus : IEventBus
 {
-    private IModel _channel;
     private readonly IConnection _connection;
     private readonly IJsonSerializer _serializer;
     private readonly ILogger<RabbitmqEventBus> _logger;
     private readonly RabbitmqPublisherConfig _publisherConfig;
+    private readonly List<(IModel channel, RabbitMqExchange exchange)> _amqpChannels = new();
 
     public RabbitmqEventBus(
         IEnumerable<IConnection> connection,
@@ -23,44 +24,51 @@ public class RabbitmqEventBus : IEventBus
         ILogger<RabbitmqEventBus> logger,
         IOptions<RabbitmqOptions> options)
     {
-        this._connection = connection.GetAmqpConnection();
-
         Guard.NotNull(config.Value, nameof(config));
-        _publisherConfig = config.Value;
 
         _logger = logger;
+        _publisherConfig = config.Value;
+        _connection = connection.GetAmqpConnection();
+        _amqpChannels.Add((_connection.CreateModel(), new RabbitMqExchange()));
         _serializer = options.Value.Serializer ?? new DefaultNewtonSoftJsonSerializer();
     }
 
-    private IModel InitChannel(IModel amqpChannel, string exchangeName = default,
-        ExchangeType exchangeType = default, Dictionary<string, object> headers = default)
+    private IModel InitChannel(RabbitMqExchange exchangeInfo, Dictionary<string, object> headers = default)
     {
-        if (amqpChannel is not null && amqpChannel.IsOpen)
+        if (!string.IsNullOrWhiteSpace(exchangeInfo.ExchangeName) &&
+            _amqpChannels.Any(a => a.exchange.ExchangeName == exchangeInfo.ExchangeName))
         {
-            return amqpChannel;
-        }
-        else
-        {
-            amqpChannel = _connection.CreateModel();
+            var channelWithExchange = _amqpChannels.First(a => a.exchange.ExchangeName == exchangeInfo.ExchangeName);
 
-            if (!string.IsNullOrWhiteSpace(exchangeName))
+            if (channelWithExchange.channel.IsOpen)
             {
-                var exchangeTypeValue = exchangeType == default
-                    ? nameof(ExchangeType.Direct).ToLower()
-                    : nameof(exchangeType).ToLower();
-
-                headers ??= new Dictionary<string, object>();
-
-                amqpChannel.ExchangeDeclare(
-                    exchange: exchangeName,
-                    type: exchangeTypeValue,
-                    durable: true,
-                    autoDelete: false,
-                    arguments: headers.Select((a, _) => new KeyValuePair<string, object>(a.Key, a.Value)).ToDictionary());
+                return channelWithExchange.channel;
             }
-
-            return amqpChannel;
+            else
+            {
+                _amqpChannels.Remove(channelWithExchange);
+            }
         }
+
+        var newChannel = _connection.CreateModel();
+
+        if (!string.IsNullOrWhiteSpace(exchangeInfo.ExchangeName))
+        {
+            var exchangeTypeValue = exchangeInfo.ExchangeType == default
+                ? nameof(ExchangeType.Direct).ToLower()
+                : nameof(exchangeInfo.ExchangeType).ToLower();
+
+            newChannel.ExchangeDeclare(
+                exchange: exchangeInfo.ExchangeName,
+                type: exchangeTypeValue,
+                durable: true,
+                autoDelete: false,
+                arguments: headers);
+        }
+
+        _amqpChannels.Add((newChannel, exchangeInfo));
+
+        return newChannel;
     }
 
     public Task Execute(string queue, Event @event, Dictionary<string, string> headers = null,
@@ -68,17 +76,17 @@ public class RabbitmqEventBus : IEventBus
     {
         Guard.NotNull(@event, nameof(@event));
 
-        var exchangeInfo = GetExchangeInfo(@event);
-        var queueName = GetQueueName(@event);
+        var queueInfo = @event.GetQueueInfo();
+        var exchangeInfo = @event.GetExchangeInfo();
 
-        InitChannel(_channel, exchangeInfo.name, exchangeInfo.type,
-            headers?.Select((a, _) => new KeyValuePair<string, object>(a.Key, a.Value)).ToDictionary());
+        var amqpChannel = InitChannel(
+            exchangeInfo, MapToRabbitmqHeaders(headers));
 
-        var properties = _channel.CreateBasicProperties();
+        var properties = amqpChannel.CreateBasicProperties();
 
-        _channel.BasicPublish(
-            exchangeInfo.name,
-            routingKey: queueName,
+        amqpChannel.BasicPublish(
+            exchangeInfo.ExchangeName,
+            routingKey: queueInfo.RoutingKey,
             body: SerializeToRabbitMqMessage(@event),
             basicProperties: properties);
 
@@ -90,46 +98,26 @@ public class RabbitmqEventBus : IEventBus
     {
         Guard.NotNull(@event, nameof(@event));
 
-        var exchangeInfo = GetExchangeInfo(@event);
-        var queueName = GetQueueName(@event);
+        var queueInfo = @event.GetQueueInfo();
+        var exchangeInfo = @event.GetExchangeInfo();
 
-        InitChannel(_channel, exchangeInfo.name, exchangeInfo.type,
-            headers.Select((a, _) => new KeyValuePair<string, object>(a.Key, a.Value)).ToDictionary());
+        var amqpChannel = InitChannel(
+            exchangeInfo,
+            headers?.Select((a, _) => new KeyValuePair<string, object>(a.Key, a.Value)).ToDictionary());
 
-        var properties = _channel.CreateBasicProperties();
+        var properties = amqpChannel.CreateBasicProperties();
 
-        _channel.BasicPublish(
-            exchangeInfo.name,
-            routingKey: queueName,
+        amqpChannel.BasicPublish(
+            exchangeInfo.ExchangeName,
+            routingKey: queueInfo.RoutingKey,
             body: SerializeToRabbitMqMessage(@event),
             basicProperties: properties);
 
         return Task.CompletedTask;
     }
 
-    private (string name, ExchangeType type) GetExchangeInfo<TEvent>(TEvent @event) where TEvent : Event
-    {
-        var exhangeInfo = @event.GetType()
-            .GetCustomAttribute<ExchangeAttribute>();
 
-        if (exhangeInfo != null)
-            return (exhangeInfo.Name, exhangeInfo.ExchangeType);
-
-        return (default, ExchangeType.Direct);
-    }
-
-    private string GetQueueName<TEvent>(TEvent @event) where TEvent : Event
-    {
-        var exhangeInfo = @event.GetType()
-            .GetCustomAttribute<QueueAttribute>();
-
-        if (exhangeInfo != null)
-            return exhangeInfo.Name;
-
-        return default;
-    }
-
-    public byte[] SerializeToRabbitMqMessage<TObject>(TObject obj)
+    private byte[] SerializeToRabbitMqMessage<TObject>(TObject obj)
     {
         if (obj is null)
             return default;
@@ -137,5 +125,12 @@ public class RabbitmqEventBus : IEventBus
         var json = _serializer.Serialize(obj);
         var finalBody = Encoding.UTF8.GetBytes(json);
         return finalBody;
+    }
+
+    private static Dictionary<string, object> MapToRabbitmqHeaders(Dictionary<string, string> headers)
+    {
+        return headers == null
+            ? new Dictionary<string, object>()
+            : headers.Select((a, _) => new KeyValuePair<string, object>(a.Key, a.Value)).ToDictionary();
     }
 }

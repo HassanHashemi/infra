@@ -1,8 +1,21 @@
 ﻿namespace Infra.Events.Rabbitmq;
 
-public sealed record RabbitMqExchange
+public sealed class RabbitMqExchange
 {
-    public string ExchangeName { get; init; }
-    public ExchangeType ExchangeType { get; init; }
+    private RabbitMqExchange()
+    {
+    }
+
+    public RabbitMqExchange(string exchangeName = default, ExchangeType exchangeType = default, string routingKey = null)
+    {
+        ExchangeType = exchangeType;
+        ExchangeName = exchangeName;
+        RoutingKey = routingKey;
+    }
+
+    public string ExchangeName { get; set; }
+    public ExchangeType ExchangeType { get; set; }
+    public string RoutingKey { get; set; }
+
     public bool Durable => true;
 }

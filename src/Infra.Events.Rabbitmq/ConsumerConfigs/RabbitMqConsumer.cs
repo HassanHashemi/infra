@@ -6,9 +6,9 @@ public sealed record RabbitMqConsumer<TConsumer> where TConsumer : AsyncEventing
 {
     public ushort PrefetchCount { get; init; }
     public bool GlobalPrefetchCount { get; init; }
-    public RabbitMqExchange ExchangeDetails { get; init; }
+    //public RabbitMqExchange ExchangeDetails { get; init; }
     public RabbitMqExchange DeadLetterExchangeDetails { get; init; }
-    public RabbitMqQueue QueueDetails { get; init; }
-    public RabbitMqBinding BindingDetails { get; init; }
+    //public RabbitMqQueue QueueDetails { get; init; }
+    //public RabbitMqBinding BindingDetails { get; init; }
     public bool AutoAcknowledgement { get; init; }
 }

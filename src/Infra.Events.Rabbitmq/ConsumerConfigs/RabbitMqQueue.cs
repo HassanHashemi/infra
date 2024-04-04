@@ -1,8 +1,21 @@
 ﻿namespace Infra.Events.Rabbitmq;
 
-public sealed record RabbitMqQueue
+public sealed class RabbitMqQueue
 {
-    public string QueueName { get; init; }
-    public bool Durable { get; init; }
+    private RabbitMqQueue()
+    {
+    }
+
+    public RabbitMqQueue(string queueName, string routingKey = default)
+    {
+        Guard.NotNullOrEmpty(queueName, nameof(queueName));
+
+        QueueName = queueName;
+        RoutingKey = routingKey;
+    }
+
+    public string QueueName { get; set; }
+    public string RoutingKey { get; set; }
+    public bool Durable => true;
     public bool AutoDelete => false;
 }

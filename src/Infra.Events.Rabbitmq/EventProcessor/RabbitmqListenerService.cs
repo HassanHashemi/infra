@@ -1,36 +1,32 @@
 ﻿using Infra.Serialization.Json;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using RabbitMQ.Client.Events;
+using RabbitMQ.Client;
+using Microsoft.Extensions.DependencyInjection;
+using System.Text;
+using Domain;
 
 namespace Infra.Events.Rabbitmq.EventProcessor;
 
 public class RabbitmqListenerService : BackgroundService
 {
     private bool _consuming = true;
-
-    private readonly ILogger<RabbitmqListenerService> _logger;
-    private readonly RabbitmqConsumerConfig _config;
-    private readonly RabbitmqHandlerInvoker _handlerFactory;
-    private readonly RabbitmqOptions _options;
+    private readonly IConnection _connection;
     private readonly IJsonSerializer _serializer;
     private readonly IServiceProvider _serviceProvider;
+    private readonly ILogger<RabbitmqListenerService> _logger;
+    private readonly RabbitmqConsumerConfig _consumerConfig;
+    private readonly RabbitmqHandlerInvoker _handlerFactory;
+    private readonly List<(RabbitMqExchange exchange, RabbitMqQueue queue)> _inProgressConsumers = new();
 
     public RabbitmqListenerService(
+        IConnection connection,
+        IServiceProvider serviceProvider,
         ILogger<RabbitmqListenerService> logger,
-        RabbitmqHandlerInvoker handlerFactory,
-        IOptions<RabbitmqConsumerConfig> subscriberConfig,
-        IOptions<RabbitmqOptions> options,
-        IServiceProvider serviceProvider) : this(logger, handlerFactory, subscriberConfig.Value, options.Value, serviceProvider)
-    {
-    }
-
-    public RabbitmqListenerService(
-        ILogger<RabbitmqListenerService> logger,
-        RabbitmqHandlerInvoker handlerFactory,
+        RabbitmqOptions rabbitmqOptions,
         RabbitmqConsumerConfig rabbitmqConsumerConfig,
-        RabbitmqOptions options,
-        IServiceProvider serviceProvider)
+        RabbitmqHandlerInvoker handlerFactory)
     {
         if (!rabbitmqConsumerConfig.IsValid)
         {
@@ -38,108 +34,133 @@ public class RabbitmqListenerService : BackgroundService
         }
 
         this._logger = logger;
-        this._config = rabbitmqConsumerConfig;
+        this._consumerConfig = rabbitmqConsumerConfig;
         this._serviceProvider = serviceProvider;
+        this._connection = connection;
         this._handlerFactory = handlerFactory;
-        this._options = options;
-        this._serializer = options.Serializer ?? new DefaultNewtonSoftJsonSerializer();
+        this._serializer = rabbitmqOptions.Serializer ?? new DefaultNewtonSoftJsonSerializer();
+    }
 
-        //if (rabbitmqConsumerConfig.Topics == null || !rabbitmqConsumerConfig.Topics.Any())
-        //{
-        //    _logger.LogWarning("No queues found to subscribe");
-        //}
-        //else
-        //{
-        //    _logger.LogInformation($"subscribing to {_serializer.Serialize(rabbitmqConsumerConfig.Topics)}");
-        //}
+    public RabbitmqListenerService(IJsonSerializer serializer)
+    {
+        _serializer = serializer;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await InitializeTopics();
+        await InitializeQueues();
 
-        _ = Task.Run(async () =>
+        foreach (var inProgressConsumer in _inProgressConsumers)
         {
-            //using var consumer = new ConsumerBuilder<Ignore, string>(ConsumerConfig).Build();
+            _ = Task.Run(async () =>
+            {
+                IModel amqpChannel = default!;
 
-            //try
-            //{
-            //    consumer.Subscribe(this._config.Topics);
-            //}
-            //catch (Exception ex)
-            //{
-            //    _logger.LogError(ex.ToString());
-            //    throw;
-            //}
+                while (_consuming || !stoppingToken.IsCancellationRequested)
+                {
+                    try
+                    {
+                        #region //Queue and exchange binding configuration
+                        amqpChannel = _connection.CreateModel();
+                        amqpChannel.BasicQos(0, _consumerConfig.PrefetchCount, _consumerConfig.GlobalPrefetchCount);
 
-            //while (_consuming || !stoppingToken.IsCancellationRequested)
-            //{
-            //    try
-            //    {
-            //        var message = consumer.Consume(TimeSpan.FromMilliseconds(150));
+                        if (!string.IsNullOrWhiteSpace(inProgressConsumer.exchange.ExchangeName))
+                            amqpChannel.ExchangeDeclare(inProgressConsumer.exchange.ExchangeName, nameof(inProgressConsumer.exchange.ExchangeType).ToLower(), true, false);
 
-            //        if (message is null)
-            //            continue;
+                        //if (rabbitMqConsumer.DeadLetterExchangeDetails is not null)
+                        //{
+                        //    amqpChannel.ExchangeDeclare(rabbitMqConsumer.DeadLetterExchangeDetails);
+                        //    rabbitMqConsumer.QueueDetails.QueueArguments.Add(Headers.XDeadLetterExchange,
+                        //        rabbitMqConsumer.DeadLetterExchangeDetails.ExchangeName);
+                        //}
 
-            //        var eventData = _serializer.Deserialize<Event>(message.Message.Value);
+                        //if (!string.IsNullOrWhiteSpace(queue.RoutingKey))
+                        //{
+                        //    queue.QueueName = $"{queue.QueueName}.{queue.RoutingKey}";
+                        //}
 
-            //        var headers = message.Message.Headers.ToDictionary(
-            //                k => k.Key,
-            //                v => Encoding.UTF8.GetString(v.GetValueBytes()))
-            //            .ToDictionary(d => d.Key, v => v.Value);
+                        var queue = inProgressConsumer.queue;
+                        amqpChannel.QueueDeclare(queue.QueueName,
+                            durable: true,
+                            exclusive: false,
+                            autoDelete: false,
+                            arguments: new Dictionary<string, object>());
 
-            //        if (_config.PreMessageHandlingHandler != null)
-            //            await _config.PreMessageHandlingHandler(_serviceProvider, eventData, headers);
+                        amqpChannel.QueueBind(queue.QueueName,
+                            exchange: inProgressConsumer.exchange.ExchangeName,
+                            routingKey: queue.RoutingKey ?? inProgressConsumer.exchange.RoutingKey,
+                            arguments: new Dictionary<string, object>());
+                        #endregion
 
-            //        await _handlerFactory.Invoke(
-            //            eventData.EventName,
-            //            message.Message.Value,
-            //            headers);
+                        #region //Add custom event handler (on message received)
+                        var consumer = ActivatorUtilities.CreateInstance<AsyncEventingBasicConsumer>(_serviceProvider, amqpChannel);
 
-            //        consumer.Commit(message);
+                        consumer.Received += async (model, ea) =>
+                        {
+                            byte[] body = ea.Body.ToArray();
+                            var message = Encoding.UTF8.GetString(body);
 
-            //        _logger.LogInformation($"Consumed Message {message.Message.Value} from queue: {message.Topic}");
-            //    }
-            //    catch (OperationCanceledException ex)
-            //    {
-            //        _logger.LogError(ex.ToString());
-            //        //consumer.Close();
-            //    }
-            //    catch (Exception ex)
-            //    {
-            //        this._logger.LogError(ex.ToString());
-            //        //consumer.Close();
+                            var eventData = _serializer.Deserialize<Event>(message);
 
-            //        _consuming = false;
-            //    }
-            //}
+                            var headers =
+                                ea.BasicProperties.Headers?
+                                    .Select(c => new KeyValuePair<string, string>(c.Key, _serializer.Serialize(c.Value)))
+                                    .ToDictionary()
+                                ?? new Dictionary<string, string>();
 
-            //consumer.Close();
-        });
+                            if (_consumerConfig.PreMessageHandlingHandler != null)
+                            {
+                                await _consumerConfig.PreMessageHandlingHandler(_serviceProvider, eventData,
+                                    headers);
+                            }
+
+                            await _handlerFactory.Invoke(
+                                eventData.EventName,
+                                message,
+                                headers);
+                        };
+                        #endregion
+
+                        #region //Consume messages
+                        var result = amqpChannel.BasicConsume(
+                            queue: queue.QueueName,
+                            autoAck: true,
+                            consumer: consumer);
+                        #endregion
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex.ToString());
+                        _consuming = false;
+                        TryDispose(amqpChannel);
+
+                        throw;
+                    }
+                }
+            }, stoppingToken);
+        }
     }
 
-    private async Task InitializeTopics()
+    private static void TryDispose(IModel amqpChannel)
     {
-        //using var adminClient = new AdminClientBuilder(new AdminClientConfig { BootstrapServers = _config.BootstrappServers }).Build();
-        //try
-        //{
-        //    foreach (var queue in _config.Topics)
-        //    {
-        //        await adminClient.CreateTopicsAsync(new TopicSpecification[]
-        //        {
-        //            new TopicSpecification
-        //            {
-        //                Name = queue,
-        //                ReplicationFactor = 1,
-        //                NumPartitions = 1
-        //            }
-        //        });
-        //    }
-        //}
-        //catch (CreateTopicsException e)
-        //{
-        //    _logger.LogError($"An error occured creating queue {e.Results[0].Topic}: {e.Results[0].Error.Reason}");
-        //}
+        try
+        {
+            amqpChannel?.Dispose();
+        }
+        catch
+        {
+            // ignored
+        }
+    }
+
+    private Task InitializeQueues()
+    {
+        foreach (var queue in _consumerConfig.Queues)
+        {
+            _inProgressConsumers.Add((queue.exchange, queue.queue));
+        }
+
+        return Task.CompletedTask;
     }
 
     public override Task StopAsync(CancellationToken cancellationToken)
