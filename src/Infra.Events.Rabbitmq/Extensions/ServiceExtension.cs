@@ -83,21 +83,21 @@ public static class ServiceExtension
 
             if (hasHandler)
             {
-                RabbitMqExchange rabbitmqExchangeInfo = new RabbitMqExchange();
                 var exchangeInfo = eventType.GetCustomAttribute<ExchangeAttribute>();
-                if (exchangeInfo != null)
-                {
-                    rabbitmqExchangeInfo = new RabbitMqExchange(exchangeInfo.Name, exchangeInfo.ExchangeType, exchangeInfo.RoutingKey);
-                }
+                var rabbitmqExchangeInfo = exchangeInfo != null 
+                    ? new RabbitMqExchange(exchangeInfo.Name, exchangeInfo.ExchangeType, exchangeInfo.RoutingKey) 
+                    : new RabbitMqExchange();
 
                 var queueInfo = eventType.GetCustomAttribute<QueueAttribute>();
-                if (queueInfo != null)
-                {
-                    var rabbitmqQueue = new RabbitMqQueue(queueInfo.Name, queueInfo.RoutingKey);
+                var rabbitmqQueue = queueInfo != null 
+                    ? new RabbitMqQueue(queueInfo.Name, queueInfo.RoutingKey) 
+                    : new RabbitMqQueue(eventType.FullName);
 
-                    config.Queues.Add(
-                        new ValueTuple<RabbitMqQueue, RabbitMqExchange>(rabbitmqQueue, rabbitmqExchangeInfo));
-                }
+                config.Queues.Add(new ValueTuple<RabbitMqQueue, RabbitMqExchange>
+                (
+                    rabbitmqQueue,
+                    rabbitmqExchangeInfo)
+                );
             }
         }
 

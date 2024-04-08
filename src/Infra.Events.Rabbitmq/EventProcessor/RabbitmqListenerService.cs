@@ -52,7 +52,7 @@ public class RabbitmqListenerService : BackgroundService
 
         foreach (var inProgressConsumer in _inProgressConsumers)
         {
-            _ = Task.Run(async () =>
+            _ = Task.Run(() =>
             {
                 IModel amqpChannel = default!;
 
@@ -136,6 +136,8 @@ public class RabbitmqListenerService : BackgroundService
                         throw;
                     }
                 }
+
+                return Task.CompletedTask;
             }, stoppingToken);
         }
     }
