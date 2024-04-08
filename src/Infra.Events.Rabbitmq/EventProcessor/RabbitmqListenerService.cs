@@ -110,8 +110,7 @@ public class RabbitmqListenerService : BackgroundService
 
                             if (_consumerConfig.PreMessageHandlingHandler != null)
                             {
-                                await _consumerConfig.PreMessageHandlingHandler(_serviceProvider, eventData,
-                                    headers);
+                                await _consumerConfig.PreMessageHandlingHandler(_serviceProvider, eventData, headers);
                             }
 
                             await _handlerFactory.Invoke(
