@@ -103,7 +103,7 @@ public class RabbitmqEventBus : IEventBus
 
         var amqpChannel = InitChannel(
             exchangeInfo,
-            headers?.Select((a, _) => new KeyValuePair<string, object>(a.Key, a.Value)).ToDictionary());
+            MapToRabbitmqHeaders(headers));
 
         var properties = amqpChannel.CreateBasicProperties();
 
