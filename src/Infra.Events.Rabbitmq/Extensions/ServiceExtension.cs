@@ -3,6 +3,7 @@ using Autofac;
 using Infra.Eevents;
 using Infra.Events.Kafka;
 using MassTransit;
+using MassTransit.Transports.Fabric;
 using Event = Domain.Event;
 
 namespace Infra.Events.Rabbitmq;
@@ -119,5 +120,25 @@ public static class ServiceExtension
         }
 
         return eventInfos;
+    }
+
+    private sealed class RabbitMqTransportInfo
+    {
+        private RabbitMqTransportInfo()
+        {
+        }
+
+        public RabbitMqTransportInfo(string exchangeName, string queueName, ExchangeType exchangeType = default, string routingKey = null)
+        {
+            ExchangeType = exchangeType;
+            ExchangeName = exchangeName;
+            QueueName = queueName;
+            RoutingKey = routingKey;
+        }
+
+        public string ExchangeName { get; set; }
+        public string QueueName { get; set; }
+        public ExchangeType ExchangeType { get; set; }
+        public string RoutingKey { get; set; }
     }
 }
