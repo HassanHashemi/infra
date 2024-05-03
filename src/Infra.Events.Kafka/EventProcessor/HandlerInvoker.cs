@@ -2,12 +2,12 @@
 using Infra.Serialization.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
+using Domain;
 
 namespace Infra.Events.Kafka
 {
@@ -56,6 +56,29 @@ namespace Infra.Events.Kafka
             var handlerType = typeof(IMessageHandler<>).MakeGenericType(type);
             var handlersType = typeof(IEnumerable<>).MakeGenericType(handlerType);
             using (var scope = _scope.BeginLifetimeScope())
+            {
+                var handlers = (IEnumerable) scope.Resolve(handlersType);
+
+                foreach (dynamic handler in handlers)
+                {
+                    await handler.Handle((dynamic) @event, headers);
+                }
+            }
+        }
+        
+        public async Task Invoke(Event @event, Dictionary<string, string> headers)
+        {
+            var type = GetType(@event.EventName);
+
+            if (type == null)
+            {
+                _logger.LogWarning($"Could not find handler for {@event.EventName}");
+                return;
+            }
+            
+            var handlerType = typeof(IMessageHandler<>).MakeGenericType(type);
+            var handlersType = typeof(IEnumerable<>).MakeGenericType(handlerType);
+            await using (var scope = _scope.BeginLifetimeScope())
             {
                 var handlers = (IEnumerable) scope.Resolve(handlersType);
 

@@ -1,7 +1,47 @@
-﻿namespace Infra.Events.Rabbitmq;
+﻿using MassTransit.Transports.Fabric;
+
+namespace Infra.Events.Rabbitmq;
 
 public class QueueAttribute : Attribute
 {
-    public string Name { get; set; }
+    public QueueAttribute(string queueName, string exchangeName, string routingKey = default)
+    {
+        Guard.NotNullOrEmpty(queueName, nameof(queueName));
+        Guard.NotNullOrEmpty(exchangeName, nameof(exchangeName));
+
+        QueueName = queueName;
+        ExchangeName = exchangeName;
+
+        if (!string.IsNullOrWhiteSpace(routingKey))
+        {
+            RoutingKey = routingKey;
+            ExchangeType = ExchangeType.Direct;
+        }
+    }
+
+    public QueueAttribute(string queueName, string exchangeName, ExchangeType exchangeType = default)
+    {
+        Guard.NotNullOrEmpty(queueName, nameof(queueName));
+        Guard.NotNullOrEmpty(exchangeName, nameof(exchangeName));
+
+        QueueName = queueName;
+        ExchangeName = exchangeName;
+        ExchangeType = exchangeType;
+    }
+
+    public QueueAttribute(string queueName, string exchangeName, string routingKey, ExchangeType exchangeType)
+    {
+        Guard.NotNullOrEmpty(queueName, nameof(queueName));
+        Guard.NotNullOrEmpty(exchangeName, nameof(exchangeName));
+
+        QueueName = queueName;
+        ExchangeName = exchangeName;
+        ExchangeType = exchangeType;
+        RoutingKey = routingKey;
+    }
+
+    public string QueueName { get; set; }
     public string RoutingKey { get; set; }
+    public string ExchangeName { get; set; }
+    public ExchangeType ExchangeType { get; set; }
 }

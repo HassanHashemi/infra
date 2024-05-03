@@ -1,73 +1,98 @@
 ﻿using System.Reflection;
 using Autofac;
-using Domain;
 using Infra.Eevents;
 using Infra.Events.Kafka;
-using Infra.Events.Rabbitmq.EventProcessor;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
-using RabbitMQ.Client;
+using MassTransit;
+using Event = Domain.Event;
 
 namespace Infra.Events.Rabbitmq;
 
 public static class ServiceExtension
 {
-    public static void AddRabbitmq(
-        this ContainerBuilder builder,
-        Action<RabbitmqOptions> rabbitmqOptions,
-        Action<RabbitmqPublisherConfig> publisherConfig,
-        Action<RabbitmqConsumerConfig> consumerConfig,
-        RabbitmqOptions options = null)
+    public static void AddRabbitmqInternal(
+        ContainerBuilder builder,
+        Action<RabbitmqOptions> rabbitmqConfigurator,
+        Action<RabbitmqConsumerConfig> consumerConfigurator)
     {
-        builder
-            .RegisterInstance(Options.Create(options ?? new RabbitmqOptions()))
-            .As<IOptions<RabbitmqOptions>>();
-
-        builder.AddRabbitmqInternal(rabbitmqOptions);
-
-        if (publisherConfig != null)
-        {
-            builder.AddRabbitmqPublisher(rabbitmqOptions, publisherConfig);
-        }
-
-        if (consumerConfig != null)
-        {
-            builder.AddRabbitmqConsumer(rabbitmqOptions, consumerConfig);
-        }
-    }
-
-    public static void AddRabbitmqPublisher(
-        this ContainerBuilder builder,
-        Action<RabbitmqOptions> rabbitmqOptions,
-        Action<RabbitmqPublisherConfig> configurator)
-    {
-        builder.AddRabbitmqInternal(rabbitmqOptions);
-
-        builder.RegisterType<RabbitmqEventBus>().As<IEventBus>().SingleInstance();
-
-        // Publisher
-        Guard.NotNull(configurator, nameof(configurator));
-        var config = new RabbitmqPublisherConfig();
-        configurator(config);
-
-        builder.RegisterInstance(Options.Create(config));
-    }
-
-    public static void AddRabbitmqConsumer(
-        this ContainerBuilder builder,
-        Action<RabbitmqOptions> rabbitmqOptions,
-        Action<RabbitmqConsumerConfig> configurator)
-    {
-        AddRabbitmqInternal(builder, rabbitmqOptions);
-
         // Consumer
-        Guard.NotNull(configurator, nameof(configurator));
-        var config = new RabbitmqConsumerConfig();
-        configurator(config);
+        Guard.NotNull(consumerConfigurator, nameof(consumerConfigurator));
+        var consumerConfig = new RabbitmqConsumerConfig();
+        consumerConfigurator(consumerConfig);
 
-        var events = config.EventAssemblies
+        Guard.NotNull(consumerConfigurator, nameof(consumerConfigurator));
+        var rabbitmqConfigs = new RabbitmqOptions();
+        rabbitmqConfigurator(rabbitmqConfigs);
+
+        var eventInfos = consumerConfig.ExtractAssemblies();
+
+        builder
+            .UseMassTransitPublisherAndConsumer(rabbitmqConfigs, eventInfos);
+
+        builder
+            .RegisterType<MassTransitEventBus>().As<IEventBus>().SingleInstance();
+
+        builder
+            .RegisterAssemblyTypes(consumerConfig.EventAssemblies)
+            .AsClosedTypesOf(typeof(IMessageHandler<>))
+            .AsImplementedInterfaces()
+            .InstancePerDependency();
+    }
+
+    private static void UseMassTransitPublisherAndConsumer(
+        this ContainerBuilder builder,
+        RabbitmqOptions config,
+        List<RabbitMqTransportInfo> eventInfos)
+    {
+        //services.AddScoped<IMassTransitPublisher<>, MassTransitPublisher<>>();
+
+        builder.AddMassTransit(bus =>
+        {
+            bus.AddConsumer<MassTransitConsumer>();
+
+            bus.UsingRabbitMq((context, cfg) =>
+            {
+                cfg.Host(new Uri(config.Host), host =>
+                {
+                    host.Username(config.Username);
+                    host.Password(config.Password);
+                });
+
+                foreach (var eventInfo in eventInfos)
+                {
+                    //configure publishers
+                    cfg.Publish<Event>(x =>
+                    {
+                        x.Durable = true;
+                        x.AutoDelete = false;
+                        x.ExchangeType = eventInfo.ExchangeType.ToString();
+                    });
+                    cfg.Message<Event>(x => x.SetEntityName(eventInfo.ExchangeName));
+
+                    //configure consumers: bind an exchange to a receive endpoint:
+                    cfg.ReceiveEndpoint(queueName: eventInfo.QueueName, endpoint =>
+                    {
+                        endpoint.Durable = true;
+                        endpoint.AutoDelete = false;
+                        endpoint.Bind(exchangeName: eventInfo.ExchangeName, exchangeCfg =>
+                        {
+                            exchangeCfg.Durable = true;
+                            exchangeCfg.AutoDelete = false;
+                            exchangeCfg.ExchangeType = eventInfo.ExchangeName;
+                            exchangeCfg.RoutingKey = eventInfo.RoutingKey;
+                        });
+                    });
+                }
+            });
+        });
+    }
+
+    private static List<RabbitMqTransportInfo> ExtractAssemblies(this RabbitmqConsumerConfig consumerConfig)
+    {
+        var events = consumerConfig.EventAssemblies
             .SelectMany(a => a.GetTypes())
             .Where(t => t.IsAssignableTo<Event>());
+
+        var eventInfos = new List<RabbitMqTransportInfo>();
 
         foreach (var eventType in events)
         {
@@ -77,76 +102,22 @@ public static class ServiceExtension
             }
 
             var handlerType = typeof(IMessageHandler<>).MakeGenericType(eventType);
-            var hasHandler = config
+            var hasHandler = consumerConfig
                 .EventAssemblies
                 .Any(ass => ass.GetTypes().Any(ty => handlerType.IsAssignableFrom(ty)));
 
             if (hasHandler)
             {
-                var exchangeInfo = eventType.GetCustomAttribute<ExchangeAttribute>();
-                var rabbitmqExchangeInfo = exchangeInfo != null 
-                    ? new RabbitMqExchange(exchangeInfo.Name, exchangeInfo.ExchangeType, exchangeInfo.RoutingKey) 
-                    : new RabbitMqExchange();
+                var queueAttribute = eventType.GetCustomAttribute<QueueAttribute>();
+                var rabbitmqExchangeInfo = queueAttribute != null
+                    ? new RabbitMqTransportInfo(queueAttribute.ExchangeName, queueAttribute.QueueName,
+                        queueAttribute.ExchangeType, queueAttribute.RoutingKey)
+                    : new RabbitMqTransportInfo(eventType.FullName, eventType.FullName);
 
-                var queueInfo = eventType.GetCustomAttribute<QueueAttribute>();
-                var rabbitmqQueue = queueInfo != null 
-                    ? new RabbitMqQueue(queueInfo.Name, queueInfo.RoutingKey) 
-                    : new RabbitMqQueue(eventType.FullName);
-
-                config.Queues.Add(new ValueTuple<RabbitMqQueue, RabbitMqExchange>
-                (
-                    rabbitmqQueue,
-                    rabbitmqExchangeInfo)
-                );
+                eventInfos.Add(rabbitmqExchangeInfo);
             }
         }
 
-        builder.RegisterInstance(Options.Create(config));
-
-        builder.RegisterType<RabbitmqListenerService>()
-            .As<IHostedService>()
-            .InstancePerDependency();
-
-        builder
-            .RegisterAssemblyTypes(config.EventAssemblies)
-            .AsClosedTypesOf(typeof(IMessageHandler<>))
-            .AsImplementedInterfaces()
-            .InstancePerDependency();
-
-        builder
-            .RegisterType<RabbitmqHandlerInvoker>()
-            .SingleInstance();
-    }
-
-    private static void AddRabbitmqInternal(
-        this ContainerBuilder builder,
-        Action<RabbitmqOptions> rabbitmqOptions)
-    {
-        var config = new RabbitmqOptions();
-        rabbitmqOptions(config);
-
-        var connectionFactory = new ConnectionFactory
-        {
-            AutomaticRecoveryEnabled = true,
-            TopologyRecoveryEnabled = true,
-            UserName = config.UserName,
-            Password = config.Password,
-            VirtualHost = config.VirtualHost ?? ConnectionFactory.DefaultVHost,
-            HostName = config.HostName,
-            Port = config.Port,
-            ClientProvidedName = config.ClientProvidedName,
-            RequestedHeartbeat = TimeSpan.FromSeconds(20),
-            NetworkRecoveryInterval = TimeSpan.FromSeconds(5),
-            ClientProperties = new Dictionary<string, object>
-            {
-                {
-                    "Connection", 0
-                }
-            }
-        };
-
-        var amqpConnection = connectionFactory.CreateConnection();
-
-        builder.RegisterInstance(amqpConnection).As<IConnection>().SingleInstance();
+        return eventInfos;
     }
 }
