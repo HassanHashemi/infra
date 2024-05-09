@@ -1,11 +1,11 @@
-﻿using Autofac;
+﻿using System.Collections;
+using System.Reflection;
+using Autofac;
+using Domain;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Collections;
-using System.Reflection;
-using Domain;
 
-namespace Infra.Events.Rabbitmq;
+namespace Infra.Events.Rabbitmq.Masstransit;
 
 public class HandlerInvoker
 {

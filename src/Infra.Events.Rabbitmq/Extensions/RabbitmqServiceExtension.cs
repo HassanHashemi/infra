@@ -2,73 +2,88 @@
 using Autofac;
 using Domain;
 using Infra.Eevents;
+using Infra.Events.Kafka;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 namespace Infra.Events.Rabbitmq;
 
 public static class RabbitmqServiceExtension
 {
-	public static void AddRabbitmqInternal(
-		this ContainerBuilder builder,
-		Action<RabbitmqOptions> rabbitmqConfigurator,
-		Action<RabbitmqConsumerConfig> consumerConfigurator)
-	{
-		// Consumer
-		Guard.NotNull(consumerConfigurator, nameof(consumerConfigurator));
-		var consumerConfig = new RabbitmqConsumerConfig();
-		consumerConfigurator(consumerConfig);
+    public static void AddRabbitmqInternal(
+        this ContainerBuilder builder,
+        Action<RabbitmqOptions> rabbitmqConfigurator,
+        Action<RabbitmqConsumerConfig> consumerConfigurator)
+    {
+        Guard.NotNull(rabbitmqConfigurator, nameof(rabbitmqConfigurator));
+        var rabbitmqConfigs = new RabbitmqOptions();
+        rabbitmqConfigurator(rabbitmqConfigs);
 
-		Guard.NotNull(consumerConfigurator, nameof(consumerConfigurator));
-		var rabbitmqConfigs = new RabbitmqOptions();
-		rabbitmqConfigurator(rabbitmqConfigs);
+        // Consumer
+        Guard.NotNull(consumerConfigurator, nameof(consumerConfigurator));
+        var consumersConfigs = new RabbitmqConsumerConfig();
+        consumerConfigurator(consumersConfigs);
 
-		var eventInfos = consumerConfig.ExtractAssemblies();
+        consumersConfigs.ExtractAssemblies();
+        builder.RegisterInstance(Options.Create(rabbitmqConfigs));
+        builder.RegisterInstance(Options.Create(consumersConfigs));
 
-		builder
-			.RegisterType<MassTransitEventBus>().As<IEventBus>().SingleInstance();
+        builder
+            .RegisterAssemblyTypes(consumersConfigs.EventAssemblies)
+            .AsClosedTypesOf(typeof(Kafka.IMessageHandler<>))
+            .AsImplementedInterfaces()
+            .InstancePerDependency();
 
-		builder
-			.RegisterAssemblyTypes(consumerConfig.EventAssemblies)
-			.AsClosedTypesOf(typeof(Kafka.IMessageHandler<>))
-			.AsImplementedInterfaces()
-			.InstancePerDependency();
+        builder
+            .RegisterType<HandlerInvoker>()
+            .SingleInstance();
 
-		builder
-			.RegisterType<HandlerInvoker>()
-			.SingleInstance();
-	}
+        builder
+            .RegisterType<RabbitMqService>()
+            .SingleInstance();
+        
+        builder.RegisterType<RabbitMqStarterHostedService>()
+            .As<IHostedService>()
+            .InstancePerDependency();
 
-	private static List<RabbitMqTransportInfo> ExtractAssemblies(this RabbitmqConsumerConfig consumerConfig)
-	{
-		var events = consumerConfig.EventAssemblies
-			.SelectMany(a => a.GetTypes())
-			.Where(t => t.IsAssignableTo<Event>());
+        // Producer
+        builder
+            .RegisterType<RabbitmqEventBus>().As<IEventBus>().SingleInstance();
 
-		var eventInfos = new List<RabbitMqTransportInfo>();
+    }
 
-		foreach (var eventType in events)
-		{
-			if (eventType.GetConstructors().All(c => c.GetParameters().Count() != 0))
-			{
-				continue;
-			}
+    private static void ExtractAssemblies(this RabbitmqConsumerConfig config)
+    {
+        var events = config.EventAssemblies
+            .SelectMany(a => a.GetTypes())
+            .Where(t => t.IsAssignableTo<Event>());
 
-			var handlerType = typeof(Kafka.IMessageHandler<>).MakeGenericType(eventType);
-			var hasHandler = consumerConfig
-				.EventAssemblies
-				.Any(ass => ass.GetTypes().Any(ty => handlerType.IsAssignableFrom(ty)));
+        foreach (var eventType in events)
+        {
+            if (eventType.GetConstructors().All(c => c.GetParameters().Count() != 0))
+            {
+                continue;
+            }
 
-			if (hasHandler)
-			{
-				var queueAttribute = eventType.GetCustomAttribute<QueueAttribute>();
-				var rabbitmqExchangeInfo = queueAttribute != null
-					? new RabbitMqTransportInfo(queueAttribute.ExchangeName, queueAttribute.QueueName,
-						queueAttribute.ExchangeType, queueAttribute.RoutingKey)
-					: new RabbitMqTransportInfo(eventType.FullName, eventType.FullName);
+            var handlerType = typeof(IMessageHandler<>).MakeGenericType(eventType);
+            var hasHandler = config
+                .EventAssemblies
+                .Any(ass => ass.GetTypes().Any(ty => handlerType.IsAssignableFrom(ty)));
 
-				eventInfos.Add(rabbitmqExchangeInfo);
-			}
-		}
+            if (!hasHandler)
+            {
+                continue;
+            }
 
-		return eventInfos;
-	}
+            var topicInfo = eventType.GetCustomAttribute<QueueAttribute>();
+            var queueName = topicInfo?.QueueName ?? eventType.FullName;
+
+            if (config.Transports.Any(a => a.queueName == queueName))
+            {
+                continue;
+            }
+
+            config.Transports.Add((queueName, topicInfo?.ExchangeName ?? string.Empty));
+        }
+    }
 }

@@ -30,7 +30,7 @@ public static class MasstransitServiceExtension
             .UseMassTransitPublisherAndConsumer(rabbitmqConfigs, eventInfos);
 
         builder
-            .RegisterType<MassTransitEventBus>().As<IEventBus>().SingleInstance();
+            .RegisterType<RabbitmqEventBus>().As<IEventBus>().SingleInstance();
 
         builder
             .RegisterAssemblyTypes(consumerConfig.EventAssemblies)
@@ -59,7 +59,7 @@ public static class MasstransitServiceExtension
 
 				cfg.Host(config.Host, host =>
                 {
-                    host.Username(config.Username);
+                    host.Username(config.UserName);
                     host.Password(config.Password);
                 });
 

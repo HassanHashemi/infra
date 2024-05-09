@@ -44,6 +44,11 @@ public class QueueAttribute : Attribute
         RoutingKey = routingKey;
     }
 
+    public QueueAttribute(string queueName)
+    {
+        QueueName = queueName;
+    }
+
     public string QueueName { get; set; }
     public string RoutingKey { get; set; }
     public string ExchangeName { get; set; }
