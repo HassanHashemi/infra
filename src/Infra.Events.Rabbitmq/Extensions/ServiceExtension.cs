@@ -1,7 +1,6 @@
 ﻿using System.Reflection;
 using Autofac;
 using Infra.Eevents;
-using Infra.Events.Kafka;
 using MassTransit;
 using MassTransit.Transports.Fabric;
 using Event = Domain.Event;
@@ -34,25 +33,29 @@ public static class ServiceExtension
 
         builder
             .RegisterAssemblyTypes(consumerConfig.EventAssemblies)
-            .AsClosedTypesOf(typeof(IMessageHandler<>))
+            .AsClosedTypesOf(typeof(Kafka.IMessageHandler<>))
             .AsImplementedInterfaces()
             .InstancePerDependency();
-    }
+
+        builder
+	        .RegisterType<HandlerInvoker>()
+	        .SingleInstance();
+	}
 
     private static void UseMassTransitPublisherAndConsumer(
         this ContainerBuilder builder,
         RabbitmqOptions config,
         List<RabbitMqTransportInfo> eventInfos)
     {
-        //services.AddScoped<IMassTransitPublisher<>, MassTransitPublisher<>>();
-
         builder.AddMassTransit(bus =>
         {
             bus.AddConsumer<MassTransitConsumer>();
 
             bus.UsingRabbitMq((context, cfg) =>
             {
-                cfg.Host(new Uri(config.Host), host =>
+	            cfg.ConfigureEndpoints(context);
+
+				cfg.Host(new Uri(config.Host), host =>
                 {
                     host.Username(config.Username);
                     host.Password(config.Password);
@@ -69,8 +72,8 @@ public static class ServiceExtension
                     });
                     cfg.Message<Event>(x => x.SetEntityName(eventInfo.ExchangeName));
 
-                    //configure consumers: bind an exchange to a receive endpoint:
-                    cfg.ReceiveEndpoint(queueName: eventInfo.QueueName, endpoint =>
+					//configure consumers: bind an exchange to a receives endpoint:
+					cfg.ReceiveEndpoint(queueName: eventInfo.QueueName, endpoint =>
                     {
                         endpoint.Durable = true;
                         endpoint.AutoDelete = false;
@@ -102,7 +105,7 @@ public static class ServiceExtension
                 continue;
             }
 
-            var handlerType = typeof(IMessageHandler<>).MakeGenericType(eventType);
+            var handlerType = typeof(Kafka.IMessageHandler<>).MakeGenericType(eventType);
             var hasHandler = consumerConfig
                 .EventAssemblies
                 .Any(ass => ass.GetTypes().Any(ty => handlerType.IsAssignableFrom(ty)));

@@ -1,5 +1,4 @@
-﻿using Infra.Events.Kafka;
-using MassTransit;
+﻿using MassTransit;
 using Event = Domain.Event;
 
 namespace Infra.Events.Rabbitmq;
@@ -12,16 +11,13 @@ public class MassTransitConsumer : IConsumer<Event>
         _invoker = invoker;
     }
 
-    public Task Consume(ConsumeContext<Event> @event)
+    public Task Consume(ConsumeContext<Event> context)
     {
-        if (@event is null)
-            return Task.CompletedTask;
-
-        //if (_config.PreMessageHandlingHandler != null)
-        //    await _config.PreMessageHandlingHandler(_serviceProvider, eventData, headers);
-
-        return _invoker.Invoke(
-            @event as Event,
+		//if (_config.PreMessageHandlingHandler != null)
+		//    await _config.PreMessageHandlingHandler(_serviceProvider, eventData, headers);
+        
+		return _invoker.Invoke(
+            context.Message,
             new Dictionary<string, string>());
     }
 }
