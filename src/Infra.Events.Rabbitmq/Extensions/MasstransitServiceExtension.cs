@@ -1,15 +1,16 @@
 ﻿using System.Reflection;
 using Autofac;
+using Autofac.Extensions.DependencyInjection;
 using Infra.Eevents;
 using MassTransit;
-using MassTransit.Transports.Fabric;
+using Microsoft.Extensions.DependencyInjection;
 using Event = Domain.Event;
 
 namespace Infra.Events.Rabbitmq;
 
-public static class ServiceExtension
+public static class MasstransitServiceExtension
 {
-    public static void AddRabbitmqInternal(
+    public static void AddMasstransitInternal(
         this ContainerBuilder builder,
         Action<RabbitmqOptions> rabbitmqConfigurator,
         Action<RabbitmqConsumerConfig> consumerConfigurator)
@@ -46,8 +47,9 @@ public static class ServiceExtension
         this ContainerBuilder builder,
         RabbitmqOptions config,
         List<RabbitMqTransportInfo> eventInfos)
-    {
-        builder.AddMassTransit(bus =>
+	{
+		var services = new ServiceCollection();
+        services.AddMassTransit(bus =>
         {
             bus.AddConsumer<MassTransitConsumer>();
 
@@ -55,7 +57,7 @@ public static class ServiceExtension
             {
 	            cfg.ConfigureEndpoints(context);
 
-				cfg.Host(new Uri(config.Host), host =>
+				cfg.Host(config.Host, host =>
                 {
                     host.Username(config.Username);
                     host.Password(config.Password);
@@ -88,7 +90,9 @@ public static class ServiceExtension
                 }
             });
         });
-    }
+
+        builder.Populate(services);
+	}
 
     private static List<RabbitMqTransportInfo> ExtractAssemblies(this RabbitmqConsumerConfig consumerConfig)
     {
@@ -123,25 +127,5 @@ public static class ServiceExtension
         }
 
         return eventInfos;
-    }
-
-    private sealed class RabbitMqTransportInfo
-    {
-        private RabbitMqTransportInfo()
-        {
-        }
-
-        public RabbitMqTransportInfo(string exchangeName, string queueName, ExchangeType exchangeType = default, string routingKey = null)
-        {
-            ExchangeType = exchangeType;
-            ExchangeName = exchangeName;
-            QueueName = queueName;
-            RoutingKey = routingKey;
-        }
-
-        public string ExchangeName { get; set; }
-        public string QueueName { get; set; }
-        public ExchangeType ExchangeType { get; set; }
-        public string RoutingKey { get; set; }
     }
 }

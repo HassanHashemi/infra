@@ -136,7 +136,7 @@ namespace Sample01
                 //    ///consumer.AutoOffsetCommit = false;,
                 //});
 
-                builder.AddRabbitmqInternal(
+                builder.AddMasstransitInternal(
 	                p =>
 	                {
 		                p.Host = "localhost";
@@ -207,7 +207,7 @@ namespace Sample01
 
 
 
-            builder.AddRabbitmqInternal(
+            builder.AddMasstransitInternal(
 	            p =>
 	            {
 		            p.Host = "localhost";

@@ -5,10 +5,8 @@ namespace Infra.Events.Rabbitmq;
 
 public class RabbitmqConsumerConfig
 {
-    public Assembly[] EventAssemblies { get; set; }
-    public Func<IServiceProvider, Event, Dictionary<string, string>, ValueTask> PreMessageHandlingHandler { get; set; } = null;
-
+	public List<(string queueName, string exchange)> Transports { get; internal set; } = new();
+	public Assembly[] EventAssemblies { get; set; }
+	public Func<IServiceProvider, Event, Dictionary<string, string>, ValueTask> PreMessageHandlingHandler { get; set; } = null;
     public bool IsValid => EventAssemblies.Any();
-    public ushort PrefetchCount { get; set; }
-    public bool GlobalPrefetchCount { get; set; }
 }
