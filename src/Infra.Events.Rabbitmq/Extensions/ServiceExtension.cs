@@ -10,7 +10,7 @@ namespace Infra.Events.Rabbitmq;
 public static class ServiceExtension
 {
     public static void AddRabbitmqInternal(
-        ContainerBuilder builder,
+        this ContainerBuilder builder,
         Action<RabbitmqOptions> rabbitmqConfigurator,
         Action<RabbitmqConsumerConfig> consumerConfigurator)
     {

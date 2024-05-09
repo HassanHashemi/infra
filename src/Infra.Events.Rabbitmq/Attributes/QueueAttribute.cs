@@ -4,6 +4,10 @@ namespace Infra.Events.Rabbitmq;
 
 public class QueueAttribute : Attribute
 {
+	public QueueAttribute()
+	{
+	}
+
     public QueueAttribute(string queueName, string exchangeName, string routingKey = default)
     {
         Guard.NotNullOrEmpty(queueName, nameof(queueName));

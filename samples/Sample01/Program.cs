@@ -19,6 +19,8 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Infra.Eevents;
+using Infra.Events.Rabbitmq;
 
 namespace Orders.Domain.Events
 {
@@ -37,6 +39,7 @@ namespace Orders.Domain.Events
     }
 
     [Topic(Name = "Ota.FlightOrderItem1")]
+    [Queue(QueueName = nameof(FlightOrderItemStateChanged), ExchangeName = nameof(FlightOrderItemStateChanged))]
     public class FlightOrderItemStateChanged : DomainEvent
     {
         public string Value { get; set; }
@@ -116,22 +119,36 @@ namespace Sample01
                 .UseServiceProviderFactory(new AutofacServiceProviderFactory())
             .ConfigureContainer<ContainerBuilder>(builder =>
             {
-                builder.AddKafka(p =>
-                {
-                    p.BootstrapServers = "91.107.239.221:30049";
-                },
-                consumer =>
-                {
-                    consumer.OffsetResetType = AutoOffsetReset.Earliest;
-                    consumer.GroupId = "gw-test37";
-                    //consumer.Topics = new[] { typeof(SmppGatewayMessage).FullName };
-                    consumer.BootstrappServers = "91.107.239.221:30049";
-                    consumer.EventAssemblies = new[] { typeof(Program).Assembly };
-                    consumer.MaxPollIntervalMs = 50_000;
-                    consumer.SessionTimeoutMs = 50_000;
-                    consumer.PreMessageHandlingHandler = (provider, @event, headers) => ValueTask.CompletedTask;
-                    ///consumer.AutoOffsetCommit = false;,
-                });
+                //builder.AddKafka(p =>
+                //{
+                //    p.BootstrapServers = "91.107.239.221:30049";
+                //},
+                //consumer =>
+                //{
+                //    consumer.OffsetResetType = AutoOffsetReset.Earliest;
+                //    consumer.GroupId = "gw-test37";
+                //    //consumer.Topics = new[] { typeof(SmppGatewayMessage).FullName };
+                //    consumer.BootstrappServers = "91.107.239.221:30049";
+                //    consumer.EventAssemblies = new[] { typeof(Program).Assembly };
+                //    consumer.MaxPollIntervalMs = 50_000;
+                //    consumer.SessionTimeoutMs = 50_000;
+                //    consumer.PreMessageHandlingHandler = (provider, @event, headers) => ValueTask.CompletedTask;
+                //    ///consumer.AutoOffsetCommit = false;,
+                //});
+
+                builder.AddRabbitmqInternal(
+	                p =>
+	                {
+		                p.Host = "localhost";
+		                p.Username = "admin";
+		                p.Password = "admin";
+		                p.VirtualHost = "/";
+	                },
+	                c =>
+	                {
+		                c.PreMessageHandlingHandler = (provider, @event, headers) => ValueTask.CompletedTask;
+		                c.EventAssemblies = new[] { typeof(Program).Assembly };
+	                });
             });
 
         public static async Task Main(string[] args)
@@ -187,15 +204,39 @@ namespace Sample01
             var builder = new ContainerBuilder();
             builder.Populate(services);
             builder.AddCommandQueryInternal(typeof(Program).Assembly);
-            var provider = builder.Build();
+
+
+
+            builder.AddRabbitmqInternal(
+	            p =>
+	            {
+		            p.Host = "localhost";
+		            p.Username = "admin";
+		            p.Password = "admin";
+		            p.VirtualHost = "/";
+	            },
+	            c =>
+	            {
+		            c.PreMessageHandlingHandler = (provider, @event, headers) => ValueTask.CompletedTask;
+		            c.EventAssemblies = new[] { typeof(Program).Assembly };
+	            });
+
+			var provider = builder.Build();
             var processor = provider.Resolve<ICommandProcessor>();
             //var result = processor.ExecuteAsync<TestCommand, string>(new TestCommand()).Result;
-            var queryProcessor = provider.Resolve<IQueryProcessor>();
-            var cts = new CancellationTokenSource(1);
-            var r = await queryProcessor.ExecuteAsync(new TestQuery(), cts.Token);
+            //var queryProcessor = provider.Resolve<IQueryProcessor>();
+            //var cts = new CancellationTokenSource(1);
+            //var r = await queryProcessor.ExecuteAsync(new TestQuery(), cts.Token);
+            var bus = provider.Resolve<IEventBus>();
+            await bus.Execute(new FlightOrderItemStateChanged
+            {
+	            Value = "Test"
+            }, new Dictionary<string, string>());
+
+
         }
 
-        public static ContainerBuilder AddCommandQueryInternal(this ContainerBuilder builder, params Assembly[] scannedAssemblies)
+		public static ContainerBuilder AddCommandQueryInternal(this ContainerBuilder builder, params Assembly[] scannedAssemblies)
         {
             builder.AddSyncEventHandlers(scannedAssemblies);
             builder.AddCommandQuery(commandProcessorOptions: new CommandProcessorOptions 
