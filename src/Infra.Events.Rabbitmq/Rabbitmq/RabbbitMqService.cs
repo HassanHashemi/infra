@@ -10,13 +10,13 @@ namespace Infra.Events.Rabbitmq;
 
 public class RabbitMqService
 {
+    private EventingBasicConsumer _consumer;
+
     private readonly IConnection _connection;
     private readonly IJsonSerializer _serializer;
     private readonly HandlerInvoker _handlerFactory;
     private readonly RabbitmqConsumerConfig _consumerConfig;
     private readonly ILogger<RabbitMqService> _logger;
-
-    private EventingBasicConsumer _consumer;
 
     public RabbitMqService(
         HandlerInvoker handlerFactory,
@@ -41,27 +41,27 @@ public class RabbitMqService
         this._logger = logger;
         this._consumerConfig = consumerConfig;
         this._handlerFactory = handlerFactory;
-        this._serializer = /*rabbitmqOptions.Serializer ?? */new DefaultNewtonSoftJsonSerializer();
+        this._serializer = rabbitmqOptions.Serializer ?? new DefaultNewtonSoftJsonSerializer();
+
+        //Initialize rabbitmq connection
+        {
+            var rabbitmqConnectionFactory = new ConnectionFactory
+            {
+                HostName = rabbitmqOptions.Host,
+                UserName = rabbitmqOptions.UserName,
+                Password = rabbitmqOptions.Password,
+                VirtualHost = rabbitmqOptions.VirtualHost
+            };
+
+            this._connection = rabbitmqConnectionFactory.CreateConnection();
+
+            _logger.LogInformation($"Starting rabbitmq connection on host:{rabbitmqOptions.Host}");
+        }
 
         if (consumerConfig.Transports == null || !consumerConfig.Transports.Any())
-        {
-            _logger.LogWarning("No queues found to subscribe");
-        }
+            _logger.LogWarning("No queues found for consuming");
         else
-        {
-            _logger.LogInformation($"subscribing to {_serializer.Serialize(consumerConfig.Transports)}");
-        }
-
-
-        var rabbitmqConnectionFactory = new ConnectionFactory
-        {
-            HostName = rabbitmqOptions.Host,
-            UserName = rabbitmqOptions.UserName,
-            Password = rabbitmqOptions.Password,
-            VirtualHost = rabbitmqOptions.VirtualHost
-        };
-
-        this._connection = rabbitmqConnectionFactory.CreateConnection();
+            _logger.LogInformation($"Consuming on queue {_serializer.Serialize(consumerConfig.Transports)}");
     }
 
     internal IConnection GetConnection() => this._connection;
@@ -76,14 +76,11 @@ public class RabbitMqService
                 {
                     using (var channel = _connection.CreateModel())
                     {
-
                         channel.ExchangeDeclare(exchange: assembly.exchange, type: ExchangeType.Fanout);
 
                         channel.QueueBind(queue: assembly.queueName,
                             exchange: assembly.exchange,
                             routingKey: "");
-
-                        Console.WriteLine(" [*] Waiting for messages.");
 
                         this._consumer = new EventingBasicConsumer(channel);
 
@@ -115,6 +112,8 @@ public class RabbitMqService
             var payloadString = Encoding.UTF8.GetString(eventArgs.ToArray());
 
             var @event = _serializer.Deserialize<Event>(payloadString);
+
+            _logger.LogInformation("Consumed message from Queue: {Queue} ,payload: {Payload}", @event.EventName, payloadString);
 
             await _handlerFactory.Invoke(@event.EventName, payloadString, new Dictionary<string, string>());
         }

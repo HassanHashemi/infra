@@ -153,8 +153,8 @@ namespace Sample01
 
         public static async Task Main(string[] args)
         {
-            await CreateHostBuilder(args).RunConsoleAsync();
-            return;
+            //await CreateHostBuilder(args).RunConsoleAsync();
+            //return;
 
             //var bus = new KafkaEventBus(new KafkaProducerConfig
             //{

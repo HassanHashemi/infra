@@ -2,21 +2,27 @@
 using RabbitMQ.Client;
 using System.Reflection;
 using System.Text;
-using Autofac;
 using Infra.Serialization.Json;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Event = Domain.Event;
 
 namespace Infra.Events.Rabbitmq;
 
 public class RabbitmqEventBus : IEventBus
 {
-    private readonly ILifetimeScope _scope;
     private readonly IJsonSerializer _serializer;
+    private readonly RabbitMqService _rabbitMqService;
+    private readonly ILogger<RabbitmqEventBus> _logger;
 
-    public RabbitmqEventBus(ILifetimeScope scope1)
+    public RabbitmqEventBus(
+        RabbitMqService rabbitMqService,
+        ILogger<RabbitmqEventBus> logger,
+        IOptions<RabbitmqOptions> rabbitmqOptions)
     {
-        _scope = scope1;
-        _serializer = new DefaultNewtonSoftJsonSerializer();
+        _logger = logger;
+        _rabbitMqService = rabbitMqService;
+        _serializer = rabbitmqOptions.Value.Serializer ?? new DefaultNewtonSoftJsonSerializer();
     }
 
     private QueueAttribute GetQueueInfo<TEvent>(TEvent @event) where TEvent : Event
@@ -38,29 +44,26 @@ public class RabbitmqEventBus : IEventBus
 
         var queueAttribute = GetQueueInfo(@event);
 
-        using (var scope = _scope.BeginLifetimeScope())
+        var connection = _rabbitMqService.GetConnection();
+
+        using (var channel = connection.CreateModel())
         {
-            var rabbitMqService = scope.Resolve<RabbitMqService>();
+            channel.QueueDeclare(
+                queue: queueAttribute.QueueName,
+                durable: true,
+                exclusive: false,
+                autoDelete: false,
+                arguments: headers.Select((x, _) => new KeyValuePair<string, object>(x.Key, x.Value)).ToDictionary());
 
-            var connection = rabbitMqService.GetConnection();
+            byte[] body = Encoding.UTF8.GetBytes(eventData);
 
-            using (var channel = connection.CreateModel())
-            {
-                channel.QueueDeclare(
-                    queue: queueAttribute.QueueName,
-                    durable: true,
-                    exclusive: false,
-                    autoDelete: false,
-                    arguments: headers.Select((x, _) => new KeyValuePair<string, object>(x.Key, x.Value)).ToDictionary());
+            channel.BasicPublish(
+                exchange: queueAttribute.ExchangeName ?? string.Empty,
+                routingKey: queueAttribute.RoutingKey ?? queueAttribute.QueueName,
+                basicProperties: null,
+                body: body);
 
-                byte[] body = Encoding.UTF8.GetBytes(eventData);
-
-                channel.BasicPublish(
-                    exchange: queueAttribute.ExchangeName ?? string.Empty,
-                    routingKey: queueAttribute.RoutingKey?? queueAttribute.QueueName,
-                    basicProperties: null,
-                    body: body);
-            }
+            _logger.LogInformation("Published message to exchange: {Exchange} ,payload: {Payload}", queueAttribute.ExchangeName ?? "default", eventData);
         }
 
         return Task.CompletedTask;

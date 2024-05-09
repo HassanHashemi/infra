@@ -49,7 +49,6 @@ public static class RabbitmqServiceExtension
         // Producer
         builder
             .RegisterType<RabbitmqEventBus>().As<IEventBus>().SingleInstance();
-
     }
 
     private static void ExtractAssemblies(this RabbitmqConsumerConfig config)
