@@ -111,7 +111,7 @@ namespace Sample01
             return Task.CompletedTask;
         }
     }
-    
+
     public class TestHandler2 : IMessageHandler<FlightOrderItemStateChanged>
     {
         public Task Handle(FlightOrderItemStateChanged @event, Dictionary<string, string> headers)
@@ -127,42 +127,43 @@ namespace Sample01
                 .UseServiceProviderFactory(new AutofacServiceProviderFactory())
             .ConfigureContainer<ContainerBuilder>(builder =>
             {
-                //builder.AddKafka(p =>
-                //{
-                //    p.BootstrapServers = "91.107.239.221:30049";
-                //},
-                //consumer =>
-                //{
-                //    consumer.OffsetResetType = AutoOffsetReset.Earliest;
-                //    consumer.GroupId = "gw-test37";
-                //    //consumer.Topics = new[] { typeof(SmppGatewayMessage).FullName };
-                //    consumer.BootstrappServers = "91.107.239.221:30049";
-                //    consumer.EventAssemblies = new[] { typeof(Program).Assembly };
-                //    consumer.MaxPollIntervalMs = 50_000;
-                //    consumer.SessionTimeoutMs = 50_000;
-                //    consumer.PreMessageHandlingHandler = (provider, @event, headers) => ValueTask.CompletedTask;
-                //    ///consumer.AutoOffsetCommit = false;,
-                //});
+                builder.AddKafka(p =>
+                {
+                    p.BootstrapServers = "91.107.239.221:30049";
+                },
+                consumer =>
+                {
+                    consumer.OffsetResetType = AutoOffsetReset.Earliest;
+                    consumer.GroupId = "gw-test37";
+                    //consumer.Topics = new[] { typeof(SmppGatewayMessage).FullName };
+                    consumer.BootstrappServers = "91.107.239.221:30049";
+                    consumer.EventAssemblies = new[] { typeof(Program).Assembly };
+                    consumer.MaxPollIntervalMs = 50_000;
+                    consumer.SessionTimeoutMs = 50_000;
+                    consumer.PreMessageHandlingHandler = (provider, @event, headers) => ValueTask.CompletedTask;
+                    ///consumer.AutoOffsetCommit = false;,
+                });
 
                 builder.AddRabbitmqInternal(
                     p =>
                     {
                         p.Host = "localhost";
-                    p.UserName = "rabbitmq";
-                    p.Password = "rabbitmq";
+                        p.UserName = "rabbitmq";
+                        p.Password = "rabbitmq";
                         p.VirtualHost = "/";
                     },
                     c =>
                     {
                         c.PreMessageHandlingHandler = (provider, @event, headers) => ValueTask.CompletedTask;
                         c.EventAssemblies = new[] { typeof(Program).Assembly };
+                        c.ConsumerGroupId = AppDomain.CurrentDomain.FriendlyName;
                     });
             });
 
         public static async Task Main(string[] args)
         {
-            await CreateHostBuilder(args).RunConsoleAsync();
-            return;
+            //await CreateHostBuilder(args).RunConsoleAsync();
+            //return;
 
             //var bus = new KafkaEventBus(new KafkaProducerConfig
             //{
@@ -231,10 +232,10 @@ namespace Sample01
 
             var provider = builder.Build();
             var processor = provider.Resolve<ICommandProcessor>();
-            //var result = processor.ExecuteAsync<TestCommand, string>(new TestCommand()).Result;
-            //var queryProcessor = provider.Resolve<IQueryProcessor>();
-            //var cts = new CancellationTokenSource(1);
-            //var r = await queryProcessor.ExecuteAsync(new TestQuery(), cts.Token);
+            var result = processor.ExecuteAsync<TestCommand, string>(new TestCommand()).Result;
+            var queryProcessor = provider.Resolve<IQueryProcessor>();
+            var cts = new CancellationTokenSource(1);
+            var r = await queryProcessor.ExecuteAsync(new TestQuery(), cts.Token);
             var bus = provider.Resolve<IEventBus>();
             await bus.Execute(new FlightOrderItemStateChanged
             {
