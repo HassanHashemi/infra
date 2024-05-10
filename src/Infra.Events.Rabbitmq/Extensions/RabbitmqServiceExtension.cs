@@ -74,15 +74,16 @@ public static class RabbitmqServiceExtension
                 continue;
             }
 
-            var topicInfo = eventType.GetCustomAttribute<QueueAttribute>();
-            var queueName = topicInfo?.QueueName ?? eventType.FullName;
+            var queueAttribute = eventType.GetCustomAttribute<QueueAttribute>();
+            var queueName = queueAttribute?.QueueName ?? eventType.FullName;
+            var exchangeName = queueAttribute?.ExchangeName ?? eventType.FullName;
 
             if (config.Transports.Any(a => a.queueName == queueName))
             {
                 continue;
             }
 
-            config.Transports.Add((queueName, topicInfo?.ExchangeName ?? string.Empty));
+            config.Transports.Add((queueName, queueAttribute?.ExchangeName ?? exchangeName));
         }
     }
 }
