@@ -8,6 +8,11 @@ public class QueueAttribute : Attribute
 	{
 	}
 
+    public QueueAttribute(string queueName)
+    {
+        QueueName = queueName;
+    }
+
     public QueueAttribute(string queueName, string exchangeName, string routingKey = default)
     {
         Guard.NotNullOrEmpty(queueName, nameof(queueName));
@@ -44,13 +49,14 @@ public class QueueAttribute : Attribute
         RoutingKey = routingKey;
     }
 
-    public QueueAttribute(string queueName)
-    {
-        QueueName = queueName;
-    }
-
+    /// <summary>
+    /// Default is FullTypeName
+    /// </summary>
     public string QueueName { get; set; }
-    public string RoutingKey { get; set; }
+    /// <summary>
+    /// Default is FullTypeName
+    /// </summary>
     public string ExchangeName { get; set; }
     public ExchangeType ExchangeType { get; set; }
+    public string RoutingKey { get; set; } = string.Empty;
 }

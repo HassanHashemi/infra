@@ -4,15 +4,15 @@ namespace Infra.Events.Rabbitmq;
 
 public class RabbitMqStarterHostedService : BackgroundService
 {
-    private readonly RabbitMqService _rabbitMqService;
+    private readonly RabbitMqConsumerService _rabbitMqConsumerService;
 
-    public RabbitMqStarterHostedService(RabbitMqService rabbitMqService)
+    public RabbitMqStarterHostedService(RabbitMqConsumerService rabbitMqConsumerService)
     {
-        _rabbitMqService = rabbitMqService;
+        _rabbitMqConsumerService = rabbitMqConsumerService;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await _rabbitMqService.ExecuteAsync(stoppingToken);
+        await _rabbitMqConsumerService.ExecuteAsync(stoppingToken);
     }
 }

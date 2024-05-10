@@ -6,22 +6,23 @@ using Infra.Serialization.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Event = Domain.Event;
+using Infra.Events.Rabbitmq.Rabbitmq;
 
 namespace Infra.Events.Rabbitmq;
 
 public class RabbitmqEventBus : IEventBus
 {
     private readonly IJsonSerializer _serializer;
-    private readonly RabbitMqService _rabbitMqService;
     private readonly ILogger<RabbitmqEventBus> _logger;
+    private readonly RabbitmqConnectionMultiplexer _connectionMultiplexer;
 
     public RabbitmqEventBus(
-        RabbitMqService rabbitMqService,
         ILogger<RabbitmqEventBus> logger,
-        IOptions<RabbitmqOptions> rabbitmqOptions)
+        IOptions<RabbitmqOptions> rabbitmqOptions,
+        RabbitmqConnectionMultiplexer connectionMultiplexer)
     {
         _logger = logger;
-        _rabbitMqService = rabbitMqService;
+        _connectionMultiplexer = connectionMultiplexer;
         _serializer = rabbitmqOptions.Value.Serializer ?? new DefaultNewtonSoftJsonSerializer();
     }
 
@@ -41,29 +42,22 @@ public class RabbitmqEventBus : IEventBus
         Guard.NotNull(@event, nameof(@event));
 
         var eventData = _serializer.Serialize(@event);
-
         var queueAttribute = GetQueueInfo(@event);
 
-        var connection = _rabbitMqService.GetConnection();
-
-        using (var channel = connection.CreateModel())
+        using (var connection = _connectionMultiplexer.GetConnection())
         {
-            channel.QueueDeclare(
-                queue: queueAttribute.QueueName,
-                durable: true,
-                exclusive: false,
-                autoDelete: false,
-                arguments: headers.Select((x, _) => new KeyValuePair<string, object>(x.Key, x.Value)).ToDictionary());
+            using (var channel = connection.CreateModel())
+            {
+                byte[] body = Encoding.UTF8.GetBytes(eventData);
 
-            byte[] body = Encoding.UTF8.GetBytes(eventData);
+                channel.BasicPublish(
+                    exchange: queueAttribute.ExchangeName ?? queueAttribute.QueueName,
+                    routingKey: queueAttribute.RoutingKey ?? string.Empty,
+                    basicProperties: null,
+                    body: body);
 
-            channel.BasicPublish(
-                exchange: queueAttribute.ExchangeName ?? string.Empty,
-                routingKey: queueAttribute.RoutingKey ?? queueAttribute.QueueName,
-                basicProperties: null,
-                body: body);
-
-            _logger.LogInformation("Published message to exchange: {Exchange} ,payload: {Payload}", queueAttribute.ExchangeName ?? "default", eventData);
+                _logger.LogInformation("Published message to exchange: {Exchange} ,payload: {Payload}", queueAttribute.ExchangeName ?? "default", eventData);
+            }
         }
 
         return Task.CompletedTask;
