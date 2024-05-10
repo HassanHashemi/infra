@@ -111,6 +111,14 @@ namespace Sample01
             return Task.CompletedTask;
         }
     }
+    
+    public class TestHandler2 : IMessageHandler<FlightOrderItemStateChanged>
+    {
+        public Task Handle(FlightOrderItemStateChanged @event, Dictionary<string, string> headers)
+        {
+            return Task.CompletedTask;
+        }
+    }
 
     public static class Program
     {
@@ -153,8 +161,8 @@ namespace Sample01
 
         public static async Task Main(string[] args)
         {
-            //await CreateHostBuilder(args).RunConsoleAsync();
-            //return;
+            await CreateHostBuilder(args).RunConsoleAsync();
+            return;
 
             //var bus = new KafkaEventBus(new KafkaProducerConfig
             //{

@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using RabbitMQ.Client.Exceptions;
 
 namespace Infra.Events.Rabbitmq;
 
@@ -43,6 +44,12 @@ public class RabbitMqService
         this._handlerFactory = handlerFactory;
         this._serializer = rabbitmqOptions.Serializer ?? new DefaultNewtonSoftJsonSerializer();
 
+        if (consumerConfig.Transports == null || !consumerConfig.Transports.Any())
+        {
+            _logger.LogWarning("No queues found for consuming");
+            return;
+        }
+
         //Initialize rabbitmq connection
         {
             var rabbitmqConnectionFactory = new ConnectionFactory
@@ -53,15 +60,27 @@ public class RabbitMqService
                 VirtualHost = rabbitmqOptions.VirtualHost
             };
 
-            this._connection = rabbitmqConnectionFactory.CreateConnection();
+            int retryCount = 5;
+            while (retryCount > 0)
+            {
+                try
+                {
+                    this._connection = rabbitmqConnectionFactory.CreateConnection();
 
-            _logger.LogInformation($"Starting rabbitmq connection on host:{rabbitmqOptions.Host}");
+                    _logger.LogInformation($"Starting rabbitmq connection on host:{rabbitmqOptions.Host}");
+                    break;
+                }
+                catch (BrokerUnreachableException ex)
+                {
+                    _logger.LogWarning($"Retrying rabbitmq connection to host:{rabbitmqOptions.Host}, Error:{ex.Message}");
+
+                    retryCount--;
+                    if (retryCount == 0) throw;
+                }
+            }
         }
 
-        if (consumerConfig.Transports == null || !consumerConfig.Transports.Any())
-            _logger.LogWarning("No queues found for consuming");
-        else
-            _logger.LogInformation($"Consuming on queue {_serializer.Serialize(consumerConfig.Transports)}");
+        _logger.LogInformation($"Consuming on queue {_serializer.Serialize(consumerConfig.Transports)}");
     }
 
     internal IConnection GetConnection() => this._connection;
