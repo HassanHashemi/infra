@@ -1,6 +1,5 @@
 ﻿using System.Text;
 using Domain;
-using Infra.Events.Rabbitmq.Rabbitmq;
 using Infra.Serialization.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -99,8 +98,10 @@ public class RabbitMqConsumerService : IDisposable
 
             var @event = _serializer.Deserialize<Event>(payloadString);
 
+            //Invoke event handler
             await _handlerFactory.Invoke(@event.EventName, payloadString, new Dictionary<string, string>());
 
+            //Send ACK to channel
             channel.BasicAck(eventArgsDeliveryTag, multiple: false);
 
             _logger.LogInformation("Consumed message from Queue: {Queue} ,payload: {Payload}",

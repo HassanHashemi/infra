@@ -6,7 +6,6 @@ using Infra.Serialization.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Event = Domain.Event;
-using Infra.Events.Rabbitmq.Rabbitmq;
 
 namespace Infra.Events.Rabbitmq;
 

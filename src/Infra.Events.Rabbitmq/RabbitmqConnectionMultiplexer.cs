@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 
-namespace Infra.Events.Rabbitmq.Rabbitmq;
+namespace Infra.Events.Rabbitmq;
 
 public class RabbitmqConnectionMultiplexer
 {

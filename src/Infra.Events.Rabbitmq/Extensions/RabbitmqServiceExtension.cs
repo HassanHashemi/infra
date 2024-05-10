@@ -3,7 +3,6 @@ using Autofac;
 using Domain;
 using Infra.Eevents;
 using Infra.Events.Kafka;
-using Infra.Events.Rabbitmq.Rabbitmq;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
