@@ -1,5 +1,5 @@
 # Infra.Net
 
-**Infra.Net** is a flexible robust faremwork for CQRS, EventSourcing and Domain-Driven Design that is integrated with **Event-Driven Architecture** using **Kafka**), that You can simply use it and modify it for your own solution,
+**Infra.Net** is an infrastructure framework for building Microservices with Event-Driven Architecture and Distributed Large-Scale Applications which have High Availability and Eventual Consistency.
 
-The main purpose of this framework is building Microservices with Event-Driven Architecture for Distributed Large-Scale Applications those should provide High Availablity with Eventual Intercomminications.
+ This framework contains implemented patterns like CQRS, Event-Sourcing and Domain-Driven Design (which are integrated with Event-Driven Architecture using **Kafka** and **Rabbitmq**), and you can easily configure it for your own solution.
