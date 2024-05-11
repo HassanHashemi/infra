@@ -2,7 +2,6 @@
 using Autofac;
 using Domain;
 using Infra.Eevents;
-using Infra.Events.Kafka;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
@@ -68,7 +67,7 @@ public static class RabbitmqServiceExtension
                 continue;
             }
 
-            var handlerType = typeof(IMessageHandler<>).MakeGenericType(eventType);
+            var handlerType = typeof(Kafka.IMessageHandler<>).MakeGenericType(eventType);
             var hasHandler = config
                 .EventAssemblies
                 .Any(ass => ass.GetTypes().Any(ty => handlerType.IsAssignableFrom(ty)));
