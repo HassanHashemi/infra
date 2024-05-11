@@ -66,7 +66,7 @@ public class RabbitMqConsumerService : IDisposable
             {
                 var assemblyQueueName = $"{_consumerConfig.ConsumerGroupId}.{assembly.queueName}";
 
-                _channel.ExchangeDeclare(exchange: assembly.exchange, type: ExchangeType.Fanout, durable: true, autoDelete: false);
+                _channel.ExchangeDeclare(exchange: assembly.exchange, type: nameof(ExchangeType.Fanout).ToLower(), durable: true, autoDelete: false);
 
                 _channel.QueueDeclare(assemblyQueueName, durable: true, exclusive: false, autoDelete: false, null);
 

@@ -49,7 +49,11 @@ public class RabbitmqEventBus : IEventBus
             {
                 byte[] body = Encoding.UTF8.GetBytes(eventData);
 
-                channel.ExchangeDeclare(exchange: queueAttribute.ExchangeName, type: ExchangeType.Fanout, durable: true, autoDelete: false);
+                channel.ExchangeDeclare(
+                    exchange: queueAttribute.ExchangeName, 
+                    type: nameof(ExchangeType.Fanout).ToLower(), 
+                    durable: true, 
+                    autoDelete: false);
 
                 channel.BasicPublish(
                     exchange: queueAttribute.ExchangeName ?? queueAttribute.QueueName,

@@ -1,6 +1,4 @@
-﻿using MassTransit.Transports.Fabric;
-
-namespace Infra.Events.Rabbitmq;
+﻿namespace Infra.Events.Rabbitmq;
 
 public class QueueAttribute : Attribute
 {
