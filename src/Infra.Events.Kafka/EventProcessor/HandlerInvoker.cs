@@ -2,12 +2,12 @@
 using Infra.Serialization.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
+using Domain;
 
 namespace Infra.Events.Kafka
 {
@@ -65,7 +65,7 @@ namespace Infra.Events.Kafka
                 }
             }
         }
-
+        
         public Type GetType(string typeName)
         {
             var type = Type.GetType(typeName);
