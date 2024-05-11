@@ -41,11 +41,11 @@ public static class RabbitmqServiceExtension
         builder
             .RegisterType<RabbitMqConsumerService>()
             .SingleInstance();
-        
+
         builder
             .RegisterType<RabbitmqConnectionMultiplexer>()
             .SingleInstance();
-        
+
         builder.RegisterType<RabbitMqStarterHostedService>()
             .As<IHostedService>()
             .InstancePerDependency();
@@ -87,7 +87,10 @@ public static class RabbitmqServiceExtension
                 continue;
             }
 
-            config.Transports.Add((queueName, queueAttribute?.ExchangeName ?? exchangeName));
+            config.Transports.Add((
+                queueName: queueName,
+                exchange: exchangeName,
+                exchangeType: queueAttribute?.ExchangeType ?? ExchangeType.Fanout));
         }
     }
 }

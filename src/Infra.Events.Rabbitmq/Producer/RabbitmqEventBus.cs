@@ -27,13 +27,13 @@ public class RabbitmqEventBus : IEventBus
 
     private QueueAttribute GetQueueInfo<TEvent>(TEvent @event) where TEvent : Event
     {
-        var topicInfo = @event.GetType()
+        var queueAttribute = @event.GetType()
             .GetCustomAttribute<QueueAttribute>();
 
-        if (topicInfo != null)
-            return topicInfo;
+        if (queueAttribute != null)
+            return queueAttribute;
 
-        return new QueueAttribute(@event.EventName);
+        return new QueueAttribute(@event.EventName, @event.EventName);
     }
 
     public Task Execute<TEvent>(TEvent @event, Dictionary<string, string> headers, CancellationToken cancellationToken = default) where TEvent : Event
@@ -51,7 +51,7 @@ public class RabbitmqEventBus : IEventBus
 
                 channel.ExchangeDeclare(
                     exchange: queueAttribute.ExchangeName, 
-                    type: nameof(ExchangeType.Fanout).ToLower(), 
+                    type: queueAttribute.ExchangeType.ToString().ToLower(), 
                     durable: true, 
                     autoDelete: false);
 
