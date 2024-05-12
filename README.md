@@ -5,11 +5,17 @@
 
  This framework contains implemented patterns like CQRS, Event-Sourcing and Domain-Driven Design (which are integrated with Event-Driven Architecture using **Kafka** and **Rabbitmq**), and you can easily configure it for your own solution.
 
+## Installation
+
+```nuget
+NuGet\Install-Package Infra
+```
+
+
 ## Configurations
+
 ### **Kafka** configuration:
-
 If you want use Kafka as your broker you can configure it like this:
-
 ```c#
  public static class Program
  {
@@ -37,9 +43,7 @@ If you want use Kafka as your broker you can configure it like this:
 ```
 
 ### **Rabbitmq** configuration:
-
 If you want use Rabbitmq as your broker you can configure it like this:
-
 ```c#
 public static class Program
 {
@@ -99,10 +103,10 @@ public static ContainerBuilder AddCommandQuery(this ContainerBuilder builder)
 
 ## Use Cases
 
+
 ### Integration Events 
 
 #### Integration Event class sample:
-
 ```c#
 [Topic(Name = "OrderItemStateChanged")] //for Kafka broker (optional attribute)
 [Queue(QueueName = "OrderItemStateChanged", ExchangeName = "OrderItemStateChanged")] // for Rabbitmq broker (optional attribute)
@@ -110,12 +114,27 @@ public class OrderItemStateChanged : DomainEvent
 {
     public string Value { get; set; }
     // ...
+
+    // MustPropagate = false: Send an internal event (C# event) and call internal event handlers (in currenct microservice)
+    // MustPropagate = true: Send an integration event (Broker event) and call all it's event handlers (in all microservices)
+    public override bool MustPropagate { get; set; } = true;
 }
 ```
 
 
 #### Integration Event Handler class sample (in the same service or another microservice):
+If you don't want to propagate event and produce and internal event (C# event), you can handle that event in the same microservice using this sample:
+```c#
+public class OrderItemStateChangedEventHandler : IEventHandler<OrderItemStateChanged>
+{
+    public Task Handle(OrderItemStateChanged @event, Dictionary<string, string> headers)
+    {
+        return Task.CompletedTask;
+    }
+}
+```
 
+If you want propagate an event through all microservices, you should configure any above brokers, then you can hanle event in any microservice which connected to the broker using this sample:
 ```c#
 public class OrderItemStateChangedEventHandler : IMessageHandler<OrderItemStateChanged>
 {
@@ -127,7 +146,6 @@ public class OrderItemStateChangedEventHandler : IMessageHandler<OrderItemStateC
 ```
 
 #### Produce an Integration Event sample:
-
 ```c#
 public class OrderController : BaseController
 {
@@ -146,6 +164,7 @@ public class OrderController : BaseController
         => ApiOk(_eventBus.Execute(new OrderItemStateChanged(id, state)));
 }
 ```
+
 
 ### Domain-Driven Design samples:
 
@@ -203,7 +222,6 @@ public class OrderCreated : DomainEvent
 
 #### Produce a Domain Event sample
 Put this two methods in the AggregateRoot for raising an event (for example OrderNoteCreated Event):
-
 ```c#
 public class Order : AggregateRoot
 {
