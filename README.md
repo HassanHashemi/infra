@@ -5,11 +5,23 @@
 
  This framework contains implemented patterns like CQRS, Event-Sourcing and Domain-Driven Design (which are integrated with Event-Driven Architecture using **Kafka** and **Rabbitmq**), and you can easily configure it for your own solution.
 
+
+
+
+
+
+
+
 ## Installation
 
 ```nuget
 NuGet\Install-Package Infra
 ```
+
+
+
+
+
 
 
 ## Configurations
@@ -102,8 +114,13 @@ public static ContainerBuilder AddCommandQuery(this ContainerBuilder builder)
 ```
 
 
-## Integration Events 
 
+
+
+
+
+
+## Integration Events 
 
 ### Integration Event class:
 ```c#
@@ -169,8 +186,12 @@ public class OrderController : BaseController
 ```
 
 
-## CQRS 
 
+
+
+
+
+## CQRS 
 
 ### Commands
 Commands are used for Add or Update any entity. a Command contains these four classes:
@@ -307,9 +328,12 @@ public class GetOrderByIdQueryResult
 
 
 
-## Domain-Driven Design:
 
 
+
+
+
+## Domain-Driven Design
 
 For domain implementation, it's better to follow these rules:
 
