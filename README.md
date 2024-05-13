@@ -87,7 +87,7 @@ public static ContainerBuilder AddCommandQuery(this ContainerBuilder builder)
             var db = context.Resolve<DbContext>();
             var logger = context.Resolve<ILogger<EfUnitOfWork>>();
             var syncEventBus = context.Resolve<SyncEventBus>();
-            var broker = context.Resolve<IEventBus>(); //Kafka, Rabbitmq, etc
+            var broker = context.Resolve<IEventBus>(); //SyncEventBus, Kafka, Rabbitmq, etc
 
             return new EfUnitOfWork(db, broker, syncEventBus, logger);
         })
@@ -108,8 +108,10 @@ public static ContainerBuilder AddCommandQuery(this ContainerBuilder builder)
 
 #### Integration Event class sample:
 ```c#
-[Topic(Name = "OrderItemStateChanged")] //for Kafka broker (optional attribute)
-[Queue(QueueName = "OrderItemStateChanged", ExchangeName = "OrderItemStateChanged")] // for Rabbitmq broker (optional attribute)
+//for Kafka broker (optional attribute, without this FullTypeName will use as Topic name)
+[Topic(Name = "OrderItemStateChanged")]
+//for Rabbitmq broker (optional attribute, without this FullTypeName will use as Exchange and Queue name)
+[Queue(QueueName = "OrderItemStateChanged", ExchangeName = "OrderItemStateChanged")] 
 public class OrderItemStateChanged : DomainEvent
 {
     public string Value { get; set; }
@@ -168,6 +170,16 @@ public class OrderController : BaseController
 
 ### Domain-Driven Design samples:
 
+For domain implementation, it's better to follow these rules:
+
+**1-** Add appropriate Constructors in all Domain classes (using as a factory methods), in order to the object to be made as it should be. Don't let them create the objects however they want!
+
+**2-** Add Default Constructor as **private** in order to EF can initialize the object.
+
+**3-** Put strict validations in the constructors, for preventing invalid data creation. (this is one of validation layers)
+
+4- Make All Properties as **{ get; private set; }** for preventing changes from outside of AggregateRoot, unless AggregateRoot expose a method to give this authority as it wants!
+
 #### Aggregate Root smaple
 ```c#
 public class Order : AggregateRoot
@@ -175,7 +187,28 @@ public class Order : AggregateRoot
     private Order()
     {
     }
-    public long OrderId { get; private set; }
+
+    public Order(
+        ProductChannel channel,
+        int customerId,
+        decimal totalPrice,
+        string description)
+    {
+        Guard.Positive(totalPrice, nameof(totalPrice));
+        Guard.MaxLength(description, 200, nameof(description));
+
+        var @event = new OrderCreated(
+            channel,
+            customerId,
+            description);
+
+        ApplyChange(@event);
+    }
+
+    public decimal TotalPrice { get; private set; }
+    public ProductChannel Channel { get; private set; }
+    public string Description { get; private set; }
+    //...
 }
 ```
 
@@ -187,13 +220,50 @@ public class OrderNote : Entity
     {
     }
 
+    public OrderNote(string text, int creatorId)
+    {
+        Guard.NotNullOrDefault(creatorId, nameof(creatorId));
+        Guard.NotNullOrEmpty(text, nameof(text));
+
+        this.Text = text;
+        this.CreatorId = creatorId;
+    }
+
     public long OrderNoteId { get; private set; }
+    public string Text { get; private set; }
+    public int CreatorId { get; set; }
+
+    //Relation properties will useful for querying data (These also should be private setter)
     public Order Order { get; private set; }
     public long OrderId { get; private set; }
 }
 ```
 
+#### ValueObject sample
+```c#
+public class OrderContactInfo : ValueObject<OrderContactInfo>
+{
+    private OrderContactInfo()
+    {
+    }
+
+    public OrderContactInfo(string email, string phoneNumber)
+    {
+        Guard.NotNullOrEmpty(email, nameof(email));
+        Guard.NotNullOrEmpty(phoneNumber, nameof(phoneNumber));
+        Guard.MaxLength(phoneNumber,15, nameof(phoneNumber));
+
+        Email = email;
+        PhoneNumber = phoneNumber;
+    }
+
+    public string Email { get; private set; }
+    public string PhoneNumber { get; private set; }
+}
+```
+
 #### Domain Event class sample
+The **DomainEvent** class inherited from **Event** class, so you can handle DomainEvents just like Events everywhere you want.
 ```c#
 [Topic(Name = OrderTopics.ORDER)] //Optional attribute
 [Queue(QueueName = OrderTopics.ORDER, ExchangeName = OrderTopics.ORDER)] //Optional attribute
@@ -221,7 +291,8 @@ public class OrderCreated : DomainEvent
 ```
 
 #### Produce a Domain Event sample
-Put this two methods in the AggregateRoot for raising an event (for example OrderNoteCreated Event):
+For producing domain events, you need read the **AggregateRoot** from database with **IUnitOfWork** which track AggregateRoot changes with events and raise all DomainEvents on **Save()** method.
+First you need to put this two methods in the AggregateRoot for raising an DomainEvent (for example OrderNoteCreated DomainEvent):
 ```c#
 public class Order : AggregateRoot
 {
@@ -245,3 +316,29 @@ public class Order : AggregateRoot
 }
 ```
 
+Then inject IUnitOfWork interface in somewhere you want excecute the add or update command (usually in a CommandHandler), make your changes on AggregateRoot (or it's Entities and ValueObjects) and call the method you implemented above, then Save changes using IUnitOfWork, the DomainEvent(s) will raise after database changes commited successfully.
+```c#
+public class ChangeOrderItemStateCommandHandler : ICommandHandler<ChangeOrderItemStateCommand, ChangeOrderItemStateCommandResult>
+{
+    private readonly IUnitOfWork _unitOfWork;
+
+    public ChangeOrderItemStateCommandHandler(IUnitOfWork unitOfWork)
+    {
+        _unitOfWork = unitOfWork;
+    }
+
+    public async Task<ChangeOrderItemStateCommandResult> HandleAsync(ChangeOrderItemStateCommand command)
+    {
+        var orderItem = await _unitOfWork
+            .Repo<OrderItem>()
+            .FirstOrDefaultAsync(o => o.OrderItemId == command.OrderItemId);
+
+        orderItem.ChangeState(command.Status, command.Description);
+
+        var result = await _unitOfWork.Save(orderItem);
+
+        return new ChangeOrderItemStateCommandResult(result);
+    }
+}
+```
+Note: Just AggregateRoots can expose methods and functionalities (Not Entities or ValueObjects), so AggregateRoots can raise DomainEvents (for noticing all handlers to it's internal changes).
