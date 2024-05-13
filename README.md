@@ -101,12 +101,11 @@ public static ContainerBuilder AddCommandQuery(this ContainerBuilder builder)
 }
 ```
 
-## Use Cases
+
+## Integration Events 
 
 
-### Integration Events 
-
-#### Integration Event class sample:
+### Integration Event class:
 ```c#
 //for Kafka broker (optional attribute, without this FullTypeName will use as Topic name)
 [Topic(Name = "OrderItemStateChanged")]
@@ -124,7 +123,9 @@ public class OrderItemStateChanged : DomainEvent
 ```
 
 
-#### Integration Event Handler class sample (in the same service or another microservice):
+### Integration Event Handler class 
+The Handler can place in the same service or another microservice:
+
 If you don't want to propagate event and produce and internal event (C# event), you can handle that event in the same microservice using this sample:
 ```c#
 public class OrderItemStateChangedEventHandler : IEventHandler<OrderItemStateChanged>
@@ -147,7 +148,7 @@ public class OrderItemStateChangedEventHandler : IMessageHandler<OrderItemStateC
 }
 ```
 
-#### Produce an Integration Event sample:
+### Producing an Integration Event
 ```c#
 public class OrderController : BaseController
 {
@@ -168,7 +169,147 @@ public class OrderController : BaseController
 ```
 
 
-### Domain-Driven Design samples:
+## CQRS 
+
+
+### Commands
+Commands are used for Add or Update any entity. a Command contains these four classes:
+
+#### 1- Command
+The Command class if will call from EndPoint should have Attribute validations, else if will use as internal Command it should has explicit constructor.
+```c#
+public class CreateOrderNoteCommand : ICommand
+{
+    [Required] 
+    public long OrderId { get; set; }
+
+    [Required] 
+    public string Text { get; set; }
+
+    public int CreatorId { get; set; }
+}
+```
+
+#### 2- CommandHandler
+The CommandHandler class should use IUnitOfWork, for raising domain events on entity changes (It is explained in the next sections)
+```c#
+public class CreateOrderNoteCommandHandler : ICommandHandler<CreateOrderNoteCommand, CreateOrderNoteCommandResult>
+{
+    private readonly IUnitOfWork _unitOfWork;
+
+    public CreateOrderNoteCommandHandler(IUnitOfWork unitOfWork)
+    {
+        _unitOfWork = unitOfWork;
+    }
+
+    public async Task<CreateOrderNoteCommandResult> HandleAsync(CreateOrderNoteCommand command)
+    {
+        var order = await _unitOfWork.Repo<Domain.Order>()
+            .Include(x => x.Notes)
+            .FirstAsync(x => x.OrderId == command.OrderId);
+
+        order.AddNote(command.Text, command.CreatorId);
+
+        await _unitOfWork.Save(order);
+        
+        return new CreateOrderNoteCommandResult();
+    }
+}
+```
+
+#### 3- CommandValidator (Required)
+The CommandValidator is used for validaing something that is related to the current data in database.
+```c#
+public class CreateOrderNoteCommandValidator : ICommandValidator<CreateOrderNoteCommand>
+{
+    private OrderDbContext _db;
+
+    public CreateOrderNoteCommandValidator(OrderDbContext db)
+    {
+        _db = db;
+    }
+
+    public async ValueTask ValidateAsync(CreateOrderNoteCommand command)
+    {
+        if (!await _db.Orders.AnyAsync(x => x.OrderId == command.OrderId))
+            throw new DomainValidationException();
+    }
+}
+```
+
+#### 4- CommandResult
+This should be a refernce type (class, enum, ...)
+```c#
+public class CreateOrderNoteCommandResult
+{
+    public bool Result { get; set; }
+}
+```
+
+### Queries
+Queries are used for fetching data and entities. a Query contains these three classes:
+
+#### 1- Query
+```c#
+public class GetOrderByIdQuery : IQueryResult<GetOrderByIdResponse>
+{
+    [RequiredNoneDefault]
+    public long OrderId { get; set; }
+}
+```
+
+#### 2- QueryHandler
+- The Query handlers can use any storage that is sync with main storage (like ElasticSearch, MongoDb, etc ...), but you need Consistent data between Read storage and Main storage (for example using Eventual Consistency that we provide here)
+- You can use any ORM to fetching data from DB like EF, Dapper, ADO.NET, etc ... .
+- For querying using **EF**, Query handlers should use **DbContext** (Not IUnitOfWork) as source and **AsNoTracking()** in querying, for not tracking changes.
+```c#
+public class GetOrderByIdQueryHandler : IQueryHandler<GetOrderByIdQuery, GetOrderByIdQueryResult>
+{
+    private readonly OrderDbContext _dbContext;
+
+    public GetOrderByIdQueryHandler(OrderDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+
+    public async Task<GetOrderByIdQueryResult> HandleAsync(GetOrderByIdQuery parameters)
+    {
+        var order = await _dbContext.Orders
+            .AsNoTracking()
+            .Select(order => new GetOrderByIdQueryResult
+            {
+                Id = order.Id,
+                OrderId = order.OrderId,
+                CartAmount = order.CartAmount,
+                Channel = order.Channel,
+                Code = order.Code,
+            })
+            .FirstOrDefaultAsync(x => x.OrderId == parameters.OrderId);
+
+        if (order == null)
+            throw new EntityNotFoundException(string.Format(Errors.OrderWasNotFoundById, parameters.OrderId));
+
+        return order;
+    }
+}
+```
+
+#### 3- QueryResult
+```c#
+public class GetOrderByIdQueryResult
+{
+    public Guid Id { get; set; }
+    public long OrderId { get; set; }
+    public string Description { get; set; }
+    public int Code { get; set; }
+}
+```
+
+
+
+## Domain-Driven Design:
+
+
 
 For domain implementation, it's better to follow these rules:
 
@@ -180,7 +321,7 @@ For domain implementation, it's better to follow these rules:
 
 4- Make All Properties as **{ get; private set; }** for preventing changes from outside of AggregateRoot, unless AggregateRoot expose a method to give this authority as it wants!
 
-#### Aggregate Root smaple
+### Aggregate Root
 ```c#
 public class Order : AggregateRoot
 {
@@ -212,7 +353,7 @@ public class Order : AggregateRoot
 }
 ```
 
-#### Entity sample
+### Entity
 ```c#
 public class OrderNote : Entity
 {
@@ -239,7 +380,7 @@ public class OrderNote : Entity
 }
 ```
 
-#### ValueObject sample
+### ValueObject
 ```c#
 public class OrderContactInfo : ValueObject<OrderContactInfo>
 {
@@ -262,7 +403,9 @@ public class OrderContactInfo : ValueObject<OrderContactInfo>
 }
 ```
 
-#### Domain Event class sample
+
+#### Domain Event class
+
 The **DomainEvent** class inherited from **Event** class, so you can handle DomainEvents just like Events everywhere you want.
 ```c#
 [Topic(Name = OrderTopics.ORDER)] //Optional attribute
