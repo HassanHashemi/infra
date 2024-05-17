@@ -2,7 +2,7 @@
 
 public class QueueAttribute : Attribute
 {
-	public QueueAttribute()
+    public QueueAttribute()
     {
         ExchangeType = ExchangeType.Fanout;
     }
@@ -12,7 +12,7 @@ public class QueueAttribute : Attribute
         QueueName = queueName;
         ExchangeType = ExchangeType.Fanout;
     }
-    
+
     public QueueAttribute(string queueName, string exchangeName, ExchangeType exchangeType = ExchangeType.Fanout)
     {
         Guard.NotNullOrEmpty(queueName, nameof(queueName));
