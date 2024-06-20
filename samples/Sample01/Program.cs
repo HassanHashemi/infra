@@ -209,39 +209,44 @@ namespace Sample01
 
             services.Configure<QueryProcessorOptions>(o => o.EndServiceKey = "4");
             services.Configure<CommandProcessorOptions>(o => o.JsonSerializer = new TestSerializer());
+            services.AddMemoryCache();
             services.AddDistributedMemoryCache();
-            var builder = new ContainerBuilder();
+			var builder = new ContainerBuilder();
+            builder.AddSyncEventBus(typeof(Program).Assembly);
             builder.Populate(services);
             builder.AddCommandQueryInternal(typeof(Program).Assembly);
 
 
 
-            builder.AddRabbitmqInternal(
-                p =>
-                {
-                    p.Host = "localhost";
-                    p.UserName = "rabbitmq";
-                    p.Password = "rabbitmq";
-                    p.VirtualHost = "/";
-                },
-                c =>
-                {
-                    c.PreMessageHandlingHandler = (provider, @event, headers) => ValueTask.CompletedTask;
-                    c.EventAssemblies = new[] { typeof(Program).Assembly };
-                });
+			//builder.AddRabbitmqInternal(
+			//    p =>
+			//    {
+			//        p.Host = "localhost";
+			//        p.UserName = "rabbitmq";
+			//        p.Password = "rabbitmq";
+			//        p.VirtualHost = "/";
+			//    },
+			//    c =>
+			//    {
+			//        c.PreMessageHandlingHandler = (provider, @event, headers) => ValueTask.CompletedTask;
+			//        c.EventAssemblies = new[] { typeof(Program).Assembly };
+			//    });
 
-            var provider = builder.Build();
-            var processor = provider.Resolve<ICommandProcessor>();
+			var provider = builder.Build();
+
+			var bus = provider.Resolve<IEventBus>();
+			await bus.Execute(new FlightOrderItemStateChanged
+			{
+				Value = "Test"
+			}, new Dictionary<string, string>());
+
+
+			var processor = provider.Resolve<ICommandProcessor>();
             var result = processor.ExecuteAsync<TestCommand, string>(new TestCommand()).Result;
             var queryProcessor = provider.Resolve<IQueryProcessor>();
             var cts = new CancellationTokenSource(1);
             var r = await queryProcessor.ExecuteAsync(new TestQuery(), cts.Token);
-            var bus = provider.Resolve<IEventBus>();
-            await bus.Execute(new FlightOrderItemStateChanged
-            {
-                Value = "Test"
-            }, new Dictionary<string, string>());
-
+            
 
         }
 
