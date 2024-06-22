@@ -30,10 +30,12 @@ public class RabbitmqEventBus : IEventBus
         var queueAttribute = @event.GetType()
             .GetCustomAttribute<QueueAttribute>();
 
-        if (queueAttribute != null)
-            return queueAttribute;
+        //If QueueAttribute not declared, use type name as QueueAttribute
+        if (queueAttribute == null) 
+            return new QueueAttribute(@event.EventName, @event.EventName);
 
-        return new QueueAttribute(@event.EventName, @event.EventName);
+        //Else return specified QueueAttribute
+        return queueAttribute;
     }
 
     public Task Execute<TEvent>(TEvent @event, Dictionary<string, string> headers, CancellationToken cancellationToken = default) where TEvent : Event
