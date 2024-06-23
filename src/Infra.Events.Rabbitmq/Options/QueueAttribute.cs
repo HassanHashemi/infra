@@ -24,8 +24,7 @@ public class QueueAttribute : Attribute
     }
 
     /// <summary>
-    /// Warning: if you want set
-    /// RoutingKey, set proper ExchangeType !
+    /// Warning: if you want set RoutingKey, set proper ExchangeType!
     /// </summary>
     /// <param name="queueName"></param>
     /// <param name="exchangeName"></param>

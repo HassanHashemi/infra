@@ -2,10 +2,10 @@
 using RabbitMQ.Client;
 using System.Reflection;
 using System.Text;
+using Domain;
 using Infra.Serialization.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Event = Domain.Event;
 
 namespace Infra.Events.Rabbitmq;
 
@@ -30,11 +30,11 @@ public class RabbitmqEventBus : IEventBus
         var queueAttribute = @event.GetType()
             .GetCustomAttribute<QueueAttribute>();
 
-        //If QueueAttribute not declared, use type name as QueueAttribute
+        //if QueueAttribute not declared, use type name as QueueAttribute
         if (queueAttribute == null) 
             return new QueueAttribute(@event.EventName, @event.EventName);
 
-        //Else return specified QueueAttribute
+        //else return specified QueueAttribute
         return queueAttribute;
     }
 
