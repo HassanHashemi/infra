@@ -51,6 +51,10 @@ public class RabbitmqEventBus : IEventBus
             {
                 byte[] body = Encoding.UTF8.GetBytes(eventData);
 
+                var properties = channel.CreateBasicProperties();
+                properties.Type = typeof(TEvent).FullName;
+                properties.Headers = headers.ToDictionary(x => x.Key, y => (object)y.Value);
+
                 channel.ExchangeDeclare(
                     exchange: queueAttribute.ExchangeName, 
                     type: queueAttribute.ExchangeType.ToString().ToLower(), 
@@ -60,7 +64,7 @@ public class RabbitmqEventBus : IEventBus
                 channel.BasicPublish(
                     exchange: queueAttribute.ExchangeName ?? queueAttribute.QueueName,
                     routingKey: queueAttribute.RoutingKey ?? string.Empty,
-                    basicProperties: null,
+                    basicProperties: properties,
                     body: body);
 
                 _logger.LogInformation("Published message to exchange: {Exchange} ,payload: {Payload}", queueAttribute.ExchangeName ?? "default", eventData);
