@@ -65,7 +65,7 @@ namespace Infra.Tests
 			consumer =>
 			{
 				consumer.OffsetResetType = AutoOffsetReset.Earliest;
-				consumer.GroupId = "test37";
+				consumer.GroupId = "xunit-consumer-group";
 				consumer.BootstrappServers = config.GetConnectionString("Kafka");
 				consumer.EventAssemblies = scannedAssemblies;
 				consumer.MaxPollIntervalMs = 50_000;
@@ -124,7 +124,7 @@ namespace Infra.Tests
 		}
 
 		[Fact]
-		public async Task KafkaIntegrationEventTest_WhenSendEvent_ShouldCallEventHandlerAsync()
+		public async Task KafkaIntegrationEventTest_WhenSendEvent_ShouldCallMessageHandlerAsync()
 		{
 			var provider = InitKafkaEventBus();
 			var bus = provider.Resolve<IEventBus>();
