@@ -9,13 +9,13 @@ namespace Infra.Tests.Event
 	{
 		public Task Handle(TestEvent @event, Dictionary<string, string> headers)
 		{
-			EventResultStorage.IntegrationEventResultHasBeenSet = true;
+			EventResultStorage.IntegrationEventResultHasBeenSet++;
 			return Task.CompletedTask;
 		}
 
 		public Task HandleEvent(TestEvent @event)
 		{
-			EventResultStorage.InternalEventResultHasBeenSet = true;
+			EventResultStorage.InternalEventResultHasBeenSet++;
 			return Task.CompletedTask;
 		}
 	}

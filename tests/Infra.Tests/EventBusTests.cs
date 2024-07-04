@@ -7,7 +7,6 @@ using Infra.Events.Kafka;
 using Infra.Tests.Event;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Xunit;
 
@@ -15,13 +14,7 @@ namespace Infra.Tests
 {
 	public class EventBusTests
 	{
-		private static IHostBuilder CreateHostBuilder(string[] args) =>
-			Host.CreateDefaultBuilder(args)
-				.UseServiceProviderFactory(new AutofacServiceProviderFactory())
-			.ConfigureContainer<ContainerBuilder>(builder =>
-			{
-			});
-
+		
 		private static IContainer InitSyncEventBus(ServiceCollection externalServices = null)
 		{
 			var internalServices = new ServiceCollection().AddLogging(x => x.AddConsole());
@@ -73,7 +66,7 @@ namespace Infra.Tests
 				consumer.PreMessageHandlingHandler = (provider, @event, headers) => ValueTask.CompletedTask;
 			});
 
-			builder.AddSyncEventHandlers(scannedAssemblies);
+			//builder.AddSyncEventHandlers(scannedAssemblies);
 
 			IContainer provider = builder.Build();
 			return provider;
@@ -97,9 +90,9 @@ namespace Infra.Tests
 
 			while (true)
 			{
-				if (EventResultStorage.InternalEventResultHasBeenSet)
+				if (EventResultStorage.InternalEventResultHasBeenSet == 1)
 				{
-					Assert.True(EventResultStorage.InternalEventResultHasBeenSet);
+					Assert.True(EventResultStorage.InternalEventResultHasBeenSet == 1);
 					break;
 				}
 			}
@@ -115,9 +108,9 @@ namespace Infra.Tests
 
 			while (true)
 			{
-				if (EventResultStorage.InternalEventResultHasBeenSet)
+				if (EventResultStorage.InternalEventResultHasBeenSet == 1)
 				{
-					Assert.True(EventResultStorage.InternalEventResultHasBeenSet);
+					Assert.True(EventResultStorage.InternalEventResultHasBeenSet == 1);
 					break;
 				}
 			}
@@ -132,9 +125,9 @@ namespace Infra.Tests
 			await bus.Execute(new TestEvent() { }, new Dictionary<string, string>());
 			while (true)
 			{
-				if (EventResultStorage.InternalEventResultHasBeenSet)
+				if (EventResultStorage.InternalEventResultHasBeenSet == 1)
 				{
-					Assert.True(EventResultStorage.InternalEventResultHasBeenSet);
+					Assert.True(EventResultStorage.InternalEventResultHasBeenSet == 1);
 					break;
 				}
 			}
@@ -142,9 +135,9 @@ namespace Infra.Tests
 			await bus.Execute(new TestEvent() { MustPropagate = true }, new Dictionary<string, string>());
 			while (true)
 			{
-				if (EventResultStorage.IntegrationEventResultHasBeenSet)
+				if (EventResultStorage.IntegrationEventResultHasBeenSet == 1)
 				{
-					Assert.True(EventResultStorage.IntegrationEventResultHasBeenSet);
+					Assert.True(EventResultStorage.IntegrationEventResultHasBeenSet == 1);
 					break;
 				}
 			}
