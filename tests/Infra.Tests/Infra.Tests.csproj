@@ -27,6 +27,8 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\..\src\Infra.Common.Decorators\Infra.Common.Decorators.csproj" />
+	  <ProjectReference Include="..\..\src\Infra.Events.Kafka\Infra.Events.Kafka.csproj" />
+	  <ProjectReference Include="..\..\src\Infra.Events.Rabbitmq\Infra.Events.Rabbitmq.csproj" />
 	  <ProjectReference Include="..\..\src\Infra\Infra.csproj" />
 	</ItemGroup>
 

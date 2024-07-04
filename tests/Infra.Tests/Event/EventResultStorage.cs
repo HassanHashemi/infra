@@ -2,6 +2,7 @@
 {
 	public static class EventResultStorage
 	{
-		public static bool ResultHasBeenSet { get; set; } = false;
+		public static bool InternalEventResultHasBeenSet { get; set; } = false;
+		public static bool IntegrationEventResultHasBeenSet { get; set; } = false;
 	}
 }
