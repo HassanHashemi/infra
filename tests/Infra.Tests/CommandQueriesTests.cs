@@ -27,7 +27,6 @@ namespace Infra.Tests
 		{
 			var internalServices = new ServiceCollection().AddLogging(x => x.AddConsole());
 			var builder = new ContainerBuilder();
-
 			builder.Populate(internalServices);
 
 			if (externalServices != null)

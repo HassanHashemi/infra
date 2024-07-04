@@ -31,10 +31,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Event\" />
-	</ItemGroup>
-
-	<ItemGroup>
 	  <None Update="appsettings.json">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </None>
