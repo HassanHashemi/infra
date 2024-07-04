@@ -5,6 +5,7 @@ using Infra.Serialization.Json;
 using Microsoft.Extensions.Options;
 using System.Reflection;
 using System.Threading.Tasks;
+using Infra.Command;
 
 namespace Infra.Common.Decorators
 {

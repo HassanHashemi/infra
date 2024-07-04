@@ -2,10 +2,10 @@
 using RabbitMQ.Client;
 using System.Reflection;
 using System.Text;
+using Domain;
 using Infra.Serialization.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Event = Domain.Event;
 
 namespace Infra.Events.Rabbitmq;
 
@@ -30,10 +30,12 @@ public class RabbitmqEventBus : IEventBus
         var queueAttribute = @event.GetType()
             .GetCustomAttribute<QueueAttribute>();
 
-        if (queueAttribute != null)
-            return queueAttribute;
+        //if QueueAttribute not declared, use type name as QueueAttribute
+        if (queueAttribute == null) 
+            return new QueueAttribute(@event.EventName, @event.EventName);
 
-        return new QueueAttribute(@event.EventName, @event.EventName);
+        //else return specified QueueAttribute
+        return queueAttribute;
     }
 
     public Task Execute<TEvent>(TEvent @event, Dictionary<string, string> headers, CancellationToken cancellationToken = default) where TEvent : Event
@@ -49,6 +51,10 @@ public class RabbitmqEventBus : IEventBus
             {
                 byte[] body = Encoding.UTF8.GetBytes(eventData);
 
+                var properties = channel.CreateBasicProperties();
+                properties.Type = typeof(TEvent).FullName;
+                properties.Headers = headers.ToDictionary(x => x.Key, y => (object)y.Value);
+
                 channel.ExchangeDeclare(
                     exchange: queueAttribute.ExchangeName, 
                     type: queueAttribute.ExchangeType.ToString().ToLower(), 
@@ -58,7 +64,7 @@ public class RabbitmqEventBus : IEventBus
                 channel.BasicPublish(
                     exchange: queueAttribute.ExchangeName ?? queueAttribute.QueueName,
                     routingKey: queueAttribute.RoutingKey ?? string.Empty,
-                    basicProperties: null,
+                    basicProperties: properties,
                     body: body);
 
                 _logger.LogInformation("Published message to exchange: {Exchange} ,payload: {Payload}", queueAttribute.ExchangeName ?? "default", eventData);

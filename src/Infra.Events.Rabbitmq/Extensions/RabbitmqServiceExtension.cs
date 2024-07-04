@@ -81,15 +81,12 @@ public static class RabbitmqServiceExtension
             var queueName = queueAttribute?.QueueName ?? eventType.FullName;
             var exchangeName = queueAttribute?.ExchangeName ?? eventType.FullName;
 
-            if (config.Transports.Any(a => a.queueName == queueName))
+            if (config.Transports.Any(a => a.QueueName == queueName))
             {
                 continue;
             }
 
-            config.Transports.Add((
-                queueName: queueName,
-                exchange: exchangeName,
-                exchangeType: queueAttribute?.ExchangeType ?? ExchangeType.Fanout));
+            config.Transports.Add(queueAttribute);
         }
     }
 }
