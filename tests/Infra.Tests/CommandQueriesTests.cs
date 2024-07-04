@@ -6,6 +6,7 @@ using Infra.Common.Decorators;
 using Infra.Queries;
 using Infra.Tests.Command;
 using Infra.Tests.Query;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -22,7 +23,7 @@ namespace Infra.Tests
 			{
 			});
 
-		private static IContainer Init(ServiceCollection externalServices = null)
+		private static IContainer InitContainer(ServiceCollection externalServices = null)
 		{
 			var internalServices = new ServiceCollection().AddLogging(x => x.AddConsole());
 			var builder = new ContainerBuilder();
@@ -42,11 +43,19 @@ namespace Infra.Tests
 			IContainer provider = builder.Build();
 			return provider;
 		}
+		
+		private static IConfiguration InitConfiguration()
+		{
+			return new ConfigurationBuilder()
+				.AddJsonFile("appsettings.json")
+				.AddEnvironmentVariables()
+				.Build();
+		}
 
 		[Fact]
 		public async Task CommandTest_WhenSendCommand_ShouldCallCommandHandlerAsync()
 		{
-			var provider = Init();
+			var provider = InitContainer();
 			var processor = provider.Resolve<ICommandProcessor>();
 
 			var result = await processor.ExecuteAsync<TestCommand, string>(new TestCommand()
@@ -60,7 +69,7 @@ namespace Infra.Tests
 		[Fact]
 		public async Task CommandTest_WhenSendCommand_ShouldCallCommandValidatorThenHandlerAsync()
 		{
-			var provider = Init();
+			var provider = InitContainer();
 			var processor = provider.Resolve<ICommandProcessor>();
 
 			var result = await processor.ExecuteAsync<TestCommand, string>(new TestCommand()
@@ -87,7 +96,7 @@ namespace Infra.Tests
 			var services = new ServiceCollection();
 			services.AddMemoryCache();
 			services.AddDistributedMemoryCache();
-			var provider = Init(services);
+			var provider = InitContainer(services);
 
 			var processor = provider.Resolve<IQueryProcessor>();
 
@@ -103,7 +112,7 @@ namespace Infra.Tests
 			services.AddMemoryCache();
 			services.AddDistributedMemoryCache();
 
-			var provider = Init(services);
+			var provider = InitContainer(services);
 			var processor = provider.Resolve<IQueryProcessor>();
 
 			var result = await processor.ExecuteAsync(
@@ -130,7 +139,63 @@ namespace Infra.Tests
 			services.AddMemoryCache();
 			services.AddDistributedMemoryCache();
 
-			var provider = Init(services);
+			var provider = InitContainer(services);
+			var processor = provider.Resolve<IQueryProcessor>();
+
+			var result = await processor.ExecuteAsync(
+				new TestQueryCacheable()
+				{
+				},
+				new CancellationToken());
+			Assert.True(result > 0);
+
+			var resultRevalidated = await processor.ExecuteAsync(
+				new TestQueryCacheable()
+				{
+					ReValidate = true,
+					HandlerCallCount = result
+				},
+				new CancellationToken());
+			Assert.True(resultRevalidated > 0);
+			Assert.True(resultRevalidated > result);
+		}
+	
+		[Fact]
+		public async Task CacheableQueryTestWithRedisCache_WhenQueryCached_ShouldNotCallQueryHandler()
+		{
+			var configs = InitConfiguration();
+			var services = new ServiceCollection();
+			services.AddMemoryCache();
+			services.AddStackExchangeRedisCache(o => { o.Configuration = configs.GetConnectionString("Redis"); });
+			var provider = InitContainer(services);
+			var processor = provider.Resolve<IQueryProcessor>();
+
+			var result = await processor.ExecuteAsync(
+				new TestQueryCacheable()
+				{
+				},
+				new CancellationToken());
+			Assert.True(result > 0);
+
+			var resultCacheable = await processor.ExecuteAsync(
+				new TestQueryCacheable()
+				{
+					HandlerCallCount = result
+				},
+				new CancellationToken());
+			Assert.True(resultCacheable > 0);
+			Assert.True(resultCacheable == result);
+		}
+
+		[Fact]
+		public async Task CacheableQueryTestWithRedisCache_WhenQueryCachedAndRevaldateRequested_ShouldCallQueryHandler()
+		{
+			var configs = InitConfiguration();
+			var services = new ServiceCollection();
+			services.AddMemoryCache();
+			services.AddStackExchangeRedisCache(o => { o.Configuration = configs.GetConnectionString("Redis"); });
+
+			var provider = InitContainer(services);
 			var processor = provider.Resolve<IQueryProcessor>();
 
 			var result = await processor.ExecuteAsync(
