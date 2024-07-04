@@ -1,14 +1,8 @@
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
-using Domain;
-using Infra.Commands;
-using Infra.Common.Decorators;
 using Infra.Eevents;
 using Infra.Events;
-using Infra.Queries;
-using Infra.Tests.Command;
 using Infra.Tests.Event;
-using Infra.Tests.Query;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
