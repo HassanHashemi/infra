@@ -1,5 +1,5 @@
 ﻿namespace Infra.Tests.Event;
 
-public class TestEvent : Domain.Event
+public class TestEvent : global::Domain.Event
 {
 }
