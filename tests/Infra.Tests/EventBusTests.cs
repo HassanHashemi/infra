@@ -3,21 +3,23 @@ using Autofac.Extensions.DependencyInjection;
 using Infra.Eevents;
 using Infra.Events;
 using Infra.Tests.Event;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Infra.Tests;
 
-public class EventBusTests
+public class EventBusTests : EventBusTestsBase
 {
-    protected IConfiguration InitConfiguration() => new ConfigurationBuilder()
-        .AddJsonFile("appsettings.json")
-        .AddEnvironmentVariables()
-        .Build();
+    private readonly ITestOutputHelper _console;
 
-    protected virtual IContainer InitEventBus(ServiceCollection externalServices = null)
+    public EventBusTests(ITestOutputHelper console)
+    {
+        _console = console;
+    }
+
+    public IContainer InitEventBus(ServiceCollection externalServices = null)
     {
         var internalServices = new ServiceCollection().AddLogging(x => x.AddConsole());
         var builder = new ContainerBuilder();
@@ -39,36 +41,50 @@ public class EventBusTests
     }
 
     [Fact]
-    public virtual async Task EventTest_WhenSendEvent_ShouldCallEventHandlerAsync()
+    public async Task EventTest_WhenSendEvent_ShouldCallEventHandlerAsync()
     {
-        var provider = InitEventBus();
+        var services = new ServiceCollection();
+        services.AddSingleton<EventResultStorage>();
+
+        var provider = InitEventBus(services);
         var bus = provider.Resolve<IEventBus>();
 
-        await bus.Execute(new TestEvent() { }, new Dictionary<string, string>());
+        await bus.Execute(new TestEvent(), new Dictionary<string, string>());
 
+        var storage = provider.Resolve<EventResultStorage>();
         while (true)
         {
-            if (EventResultStorage.InternalEventResultHasBeenSet == 1)
+            if (storage.InternalEventResultHasBeenSet == 1)
             {
-                Assert.True(EventResultStorage.InternalEventResultHasBeenSet == 1);
+                Assert.True(storage.InternalEventResultHasBeenSet == 1);
                 break;
             }
         }
     }
 
     [Fact]
-    public virtual async Task EventTest_WhenSendEvent_ShouldCallCustomFuncBeforeEventHandlerAsync()
+    public async Task EventTest_WhenSendEvent_ShouldCallCustomFuncBeforeEventHandlerAsync()
     {
-        var provider = InitEventBus();
+        var services = new ServiceCollection();
+        services.AddSingleton<EventResultStorage>();
+
+        var provider = InitEventBus(services);
         var bus = provider.Resolve<IEventBus>();
 
-        await bus.Execute(new TestEvent() { }, new Dictionary<string, string>());
+        await bus.Execute(new TestEvent(), new Dictionary<string, string>());
 
+        var storage = provider.Resolve<EventResultStorage>();
         while (true)
         {
-            if (EventResultStorage.InternalEventResultHasBeenSet == 1)
+            if (storage.InternalEventResultHasBeenSet > 1)
             {
-                Assert.True(EventResultStorage.InternalEventResultHasBeenSet == 1);
+                Assert.Fail("Consumer called more than once");
+                break;
+            }
+
+            if (storage.InternalEventResultHasBeenSet == 1)
+            {
+                Assert.True(storage.InternalEventResultHasBeenSet == 1);
                 break;
             }
         }

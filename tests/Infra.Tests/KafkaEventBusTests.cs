@@ -12,9 +12,9 @@ using Xunit;
 
 namespace Infra.Tests;
 
-public class KafkaEventBusTests : EventBusTests
+public class KafkaEventBusTests : EventBusTestsBase
 {
-    protected override IContainer InitEventBus(ServiceCollection externalServices = null)
+    protected IContainer InitEventBus(ServiceCollection externalServices = null)
     {
         var config = InitConfiguration();
 
@@ -23,6 +23,9 @@ public class KafkaEventBusTests : EventBusTests
 
         var builder = new ContainerBuilder();
         builder.Populate(services);
+
+        if (externalServices != null)
+            builder.Populate(externalServices);
 
         var scannedAssemblies = new[]
         {
@@ -51,29 +54,55 @@ public class KafkaEventBusTests : EventBusTests
     }
 
     [Fact]
-    public override async Task EventTest_WhenSendEvent_ShouldCallEventHandlerAsync()
+    public async Task EventTest_WhenSendEvent_ShouldCallEventHandlerAsync()
     {
-        var provider = this.InitEventBus();
-        var bus = provider.Resolve<IEventBus>();
+        //Arrange
+        var services = new ServiceCollection();
+        services.AddSingleton<EventResultStorage>();
 
+        var provider = this.InitEventBus(services);
+        var bus = provider.Resolve<IEventBus>();
+        var storage = provider.Resolve<EventResultStorage>();
+
+        //Act
         await bus.Execute(new TestEvent(), new Dictionary<string, string>());
+
+        //Assert
+        int reTries = 10;
         while (true)
         {
-            if (EventResultStorage.InternalEventResultHasBeenSet == 1)
+            if (storage.InternalEventResultHasBeenSet == 1)
             {
-                Assert.True(EventResultStorage.InternalEventResultHasBeenSet == 1);
+                Assert.True(storage.InternalEventResultHasBeenSet == 1);
                 break;
             }
+
+            if (reTries <= 0)
+            {
+                Assert.Fail("Message was not consumed");
+            }
+
+            reTries--;
+            await Task.Delay(TimeSpan.FromSeconds(0.1));
         }
 
         await bus.Execute(new TestEvent { MustPropagate = true }, new Dictionary<string, string>());
+        reTries = 10;
         while (true)
         {
-            if (EventResultStorage.IntegrationEventResultHasBeenSet == 1)
+            if (storage.IntegrationEventResultHasBeenSet == 1)
             {
-                Assert.True(EventResultStorage.IntegrationEventResultHasBeenSet == 1);
+                Assert.True(storage.IntegrationEventResultHasBeenSet == 1);
                 break;
             }
+
+            if (reTries <= 0)
+            {
+                Assert.Fail("Message was not consumed");
+            }
+
+            reTries--;
+            await Task.Delay(TimeSpan.FromSeconds(0.1));
         }
     }
 }

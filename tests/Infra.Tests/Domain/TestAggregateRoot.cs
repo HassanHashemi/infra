@@ -5,6 +5,17 @@ namespace Infra.Tests.Domain;
 
 public class TestAggregateRoot : AggregateRoot
 {
+    private TestAggregateRoot()
+    {
+    }
+
+    public TestAggregateRoot(int primaryKey)
+    {
+        TestAggregateRootId = primaryKey;
+        this.Id = GuidGenerator.NewGuid();
+        this.CreateDate = DateTime.Now;
+    }
+
     [Key]
     public long TestAggregateRootId { get; private set; }
 
