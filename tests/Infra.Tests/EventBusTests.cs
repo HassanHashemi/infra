@@ -43,14 +43,17 @@ public class EventBusTests : EventBusTestsBase
     [Fact]
     public async Task EventTest_WhenSendEvent_ShouldCallEventHandlerAsync()
     {
+        //Arrange
         var services = new ServiceCollection();
         services.AddSingleton<EventResultStorage>();
 
         var provider = InitEventBus(services);
         var bus = provider.Resolve<IEventBus>();
 
+        //Act
         await bus.Execute(new TestEvent(), new Dictionary<string, string>());
 
+        //Assert
         var storage = provider.Resolve<EventResultStorage>();
         while (true)
         {
@@ -65,14 +68,17 @@ public class EventBusTests : EventBusTestsBase
     [Fact]
     public async Task EventTest_WhenSendEvent_ShouldCallCustomFuncBeforeEventHandlerAsync()
     {
+        //Arrange
         var services = new ServiceCollection();
         services.AddSingleton<EventResultStorage>();
 
         var provider = InitEventBus(services);
         var bus = provider.Resolve<IEventBus>();
 
+        //Act
         await bus.Execute(new TestEvent(), new Dictionary<string, string>());
 
+        //Assert
         var storage = provider.Resolve<EventResultStorage>();
         while (true)
         {

@@ -53,6 +53,7 @@ public class RabbitmqEventBusTests : EventBusTestsBase
     [Fact]
     public async Task EventTest_WhenSendEvent_ShouldCallEventHandlerAsync()
     {
+        //Arrange
         var services = new ServiceCollection();
         services.AddSingleton<EventResultStorage>();
 
@@ -60,8 +61,10 @@ public class RabbitmqEventBusTests : EventBusTestsBase
         var bus = provider.Resolve<IEventBus>();
         var storage = provider.Resolve<EventResultStorage>();
 
-
+        //Act
         await bus.Execute(new TestEvent(), new Dictionary<string, string>());
+
+        //Assert
         int reTries = 10;
         while (true)
         {
