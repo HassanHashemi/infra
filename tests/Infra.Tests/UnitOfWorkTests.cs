@@ -1,14 +1,7 @@
 ﻿using Autofac;
-using Autofac.Extensions.DependencyInjection;
-using Infra.Common.Decorators;
-using Infra.Eevents;
 using Infra.EFCore;
-using Infra.Events;
 using Infra.Tests.Domain;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Xunit;
 
 namespace Infra.Tests;
@@ -20,9 +13,10 @@ public class UnitOfWorkTests
     {
         //Arrange
         var provider = new ContainerBuilder()
+            .AddLoggingInternal()
             .AddDbContextInternal()
-            .AddEventBusInternal()
-            .AddCommandQueryInternal()
+            .AddUnitOfWorkInternal()
+            .AddSyncEventBusInternal()
             .Build();
 
         var db = provider.Resolve<TestDbContext>();
@@ -59,14 +53,15 @@ public class UnitOfWorkTests
     [Fact]
     public async Task DomainEvent_WhenAggregateRootDeleted_ShouldDeleteAggregateRoot()
     {
-        //Arrange
-        var provider = new ContainerBuilder()
-            .AddDbContextInternal()
-            .AddEventBusInternal()
-            .AddCommandQueryInternal()
-            .Build();
+		//Arrange
+		var provider = new ContainerBuilder()
+			.AddLoggingInternal()
+			.AddDbContextInternal()
+			.AddUnitOfWorkInternal()
+			.AddSyncEventBusInternal()
+			.Build();
 
-        var db = provider.Resolve<TestDbContext>();
+		var db = provider.Resolve<TestDbContext>();
         db.TestAggregateRoots.Add(new TestAggregateRoot(2));
         await db.SaveChangesAsync();
 
@@ -79,58 +74,5 @@ public class UnitOfWorkTests
         //Assert
         var testAggregateRoot = await db.TestAggregateRoots.AsNoTracking().FirstOrDefaultAsync(x => x.TestAggregateRootId == 2);
         Assert.True(testAggregateRoot == null);
-    }
-}
-
-internal static class TestServiceExtension
-{
-    internal static IConfiguration Configuration { get; private set; }
-
-    internal static ContainerBuilder AddDbContextInternal(this ContainerBuilder builder)
-    {
-        var services = new ServiceCollection();
-
-        services.AddDbContext<TestDbContext>(options =>
-            options.UseInMemoryDatabase(databaseName: "TestDb"));
-
-        services.AddScoped<DbContext, TestDbContext>();
-
-        builder.Populate(services);
-
-        return builder;
-    }
-
-    internal static ContainerBuilder AddEventBusInternal(this ContainerBuilder builder)
-    {
-        var internalServices = new ServiceCollection().AddLogging(x => x.AddConsole());
-        builder.Populate(internalServices);
-
-        builder.AddSyncEventBus();
-
-        return builder;
-    }
-
-    internal static ContainerBuilder AddCommandQueryInternal(this ContainerBuilder builder)
-    {
-        var scannedAssemblies = new[]
-        {
-            typeof(TestAggregateRootInfoUpdatedDomainEvent).Assembly
-        };
-
-        builder.Register<IUnitOfWork>(context =>
-            {
-                var db = context.Resolve<DbContext>();
-                var logger = context.Resolve<ILogger<EfUnitOfWork>>();
-                var syncEventBus = context.Resolve<SyncEventBus>();
-                var eventBus = context.Resolve<IEventBus>();
-
-                return new EfUnitOfWork(db, eventBus, syncEventBus, logger);
-            })
-            .InstancePerLifetimeScope();
-
-        builder.AddSyncEventHandlers(scannedAssemblies);
-        builder.AddCommandQuery(scannedAssemblies: scannedAssemblies);
-
-        return builder;
     }
 }
