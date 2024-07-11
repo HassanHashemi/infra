@@ -32,6 +32,18 @@ public class TestAggregateRoot : AggregateRoot
 
         ApplyChange(@event);
     }
+    
+    public void UpdateInfoWithMustPropogate(string title, int index)
+    {
+        Guard.NotNullOrEmpty(title, nameof(title));
+
+        var @event = new TestAggregateRootInfoUpdatedDomainEvent(this.Id, title, index)
+        {
+            MustPropagate = true
+        };
+
+        ApplyChange(@event);
+    }
 
     private void Apply(TestAggregateRootInfoUpdatedDomainEvent domainEvent)
     {

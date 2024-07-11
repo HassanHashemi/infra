@@ -85,7 +85,7 @@ public class CommandQueriesTests
 	}
 
 	[Fact]
-	public async Task CacheableQueryTest_WhenQueryCached_ShouldNotCallQueryHandler()
+	public async Task CacheableQueryTest_WhenQueryCached_ShouldCallQueryHandler()
 	{
 		//Arrange
 		var provider = new ContainerBuilder()
@@ -144,7 +144,7 @@ public class CommandQueriesTests
 	}
 
 	[Fact]
-	public async Task CacheableQueryTestWithRedisCache_WhenQueryCached_ShouldNotCallQueryHandler()
+	public async Task RedisCacheableQueryTest_WhenQueryCached_ShouldCallQueryHandler()
 	{
 		//Arrange
 		var provider = new ContainerBuilder()
@@ -173,7 +173,7 @@ public class CommandQueriesTests
 	}
 
 	[Fact]
-	public async Task CacheableQueryTestWithRedisCache_WhenQueryCachedAndRevaldateRequested_ShouldCallQueryHandler()
+	public async Task RedisCacheableQueryTest_WhenQueryCachedAndRevaldateRequested_ShouldCallQueryHandler()
 	{
 		//Arrange
 		var provider = new ContainerBuilder()
