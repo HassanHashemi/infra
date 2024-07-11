@@ -20,9 +20,9 @@ namespace Infra.Tests;
 internal static class TestServiceExtension
 {
 	private static IConfiguration Configuration => new ConfigurationBuilder()
-			.AddJsonFile("appsettings.json")
-			.AddEnvironmentVariables()
-			.Build();
+		.AddJsonFile("appsettings.json")
+		.AddEnvironmentVariables()
+		.Build();
 
 	internal static ContainerBuilder AddLoggingInternal(this ContainerBuilder builder)
 	{
@@ -129,22 +129,21 @@ internal static class TestServiceExtension
 
 	internal static ContainerBuilder AddKafkaEventBusInternal(this ContainerBuilder builder)
 	{
-		var config = Configuration;
-
 		var scannedAssemblies = new[]
 		{
 			typeof(TestEvent).Assembly
 		};
 
-		builder.AddKafka(producer =>
-		{
-			producer.BootstrapServers = config.GetConnectionString("Kafka");
-		},
+		builder.AddKafka(
+			producer =>
+			{
+				producer.BootstrapServers = Configuration.GetConnectionString("Kafka");
+			},
 			consumer =>
 			{
 				consumer.OffsetResetType = AutoOffsetReset.Earliest;
 				consumer.GroupId = "xunit-consumer-group";
-				consumer.BootstrappServers = config.GetConnectionString("Kafka");
+				consumer.BootstrappServers = Configuration.GetConnectionString("Kafka");
 				consumer.EventAssemblies = scannedAssemblies;
 				consumer.MaxPollIntervalMs = 50_000;
 				consumer.SessionTimeoutMs = 50_000;
@@ -157,8 +156,6 @@ internal static class TestServiceExtension
 
 	internal static ContainerBuilder AddRabbitmqEventBusInternal(this ContainerBuilder builder)
 	{
-		var config = Configuration;
-
 		var scannedAssemblies = new[]
 		{
 			typeof(TestEvent).Assembly
