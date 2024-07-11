@@ -6,7 +6,7 @@ using Xunit;
 
 namespace Infra.Tests;
 
-public class RabbitmqEventBusTests : EventBusTestsBase
+public class RabbitmqEventBusTests
 {
     [Fact]
     public async Task EventTest_WhenSendEvent_ShouldCallEventHandlerAsync()

@@ -6,7 +6,7 @@ using Xunit.Abstractions;
 
 namespace Infra.Tests;
 
-public class EventBusTests : EventBusTestsBase
+public class EventBusTests
 {
     private readonly ITestOutputHelper _console;
 
