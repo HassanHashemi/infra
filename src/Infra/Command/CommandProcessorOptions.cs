@@ -1,6 +1,6 @@
 ﻿using Infra.Serialization.Json;
 
-namespace Infra.Queries;
+namespace Infra.Commands;
 
 public class CommandProcessorOptions
 {

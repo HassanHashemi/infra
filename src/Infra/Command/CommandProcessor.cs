@@ -6,7 +6,7 @@ using Infra.Commands;
 using Infra.Queries;
 using Microsoft.Extensions.Options;
 
-namespace Infra.Command
+namespace Infra.Commands
 {
     public sealed class CommandProcessor : ICommandProcessor
     {
