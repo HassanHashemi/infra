@@ -20,22 +20,14 @@ public class TestAggregateRoot : AggregateRoot
     
     public int Index { get; private set; }
 
-    public void UpdateInfo(string title, int index)
-    {
-        Guard.NotNullOrEmpty(title, nameof(title));
-
-        var @event = new TestAggregateRootInfoUpdatedDomainEvent(this.Id, title, index);
-
-        ApplyChange(@event);
-    }
-    
-    public void UpdateInfoWithMustPropogate(string title, int index)
+    public void UpdateInfo(string title, int index, bool mustPropagate = false)
     {
         Guard.NotNullOrEmpty(title, nameof(title));
 
         var @event = new TestAggregateRootInfoUpdatedDomainEvent(this.Id, title, index)
         {
-            MustPropagate = true
+            MustPropagate = mustPropagate,
+            Timestamp = DateTime.Now
         };
 
         ApplyChange(@event);

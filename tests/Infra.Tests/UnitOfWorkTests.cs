@@ -105,14 +105,16 @@ public class UnitOfWorkTests
         //Act
         var unitOfWork = provider.Resolve<IUnitOfWork>();
         var aggregateRoot = await unitOfWork.Repo<TestAggregateRoot>().FirstAsync(x => x.Id == primaryKey);
-        aggregateRoot.UpdateInfoWithMustPropogate("test", 3);
+        aggregateRoot.UpdateInfo("test", 3);
         await unitOfWork.Save(aggregateRoot);
 
         //Assert
         var reTries = 10;
         while (true)
         {
-            var testAggregateRoot = await db.TestAggregateRoots.AsNoTracking().FirstAsync(x => x.Id == primaryKey);
+            var testAggregateRoot = await db.TestAggregateRoots
+                .AsNoTracking()
+                .FirstAsync(x => x.Id == primaryKey);
             if (!string.IsNullOrWhiteSpace(testAggregateRoot.Title))
             {
                 Assert.True(testAggregateRoot.Index == 3);
@@ -147,15 +149,19 @@ public class UnitOfWorkTests
 
         //Act
         var unitOfWork = provider.Resolve<IUnitOfWork>();
-        var aggregateRoot = await unitOfWork.Repo<TestAggregateRoot>().FirstAsync(x => x.Id == primaryKey);
-        aggregateRoot.UpdateInfoWithMustPropogate("test", 4);
+        var aggregateRoot = await unitOfWork
+            .Repo<TestAggregateRoot>()
+            .FirstAsync(x => x.Id == primaryKey);
+        aggregateRoot.UpdateInfo("test", 4);
         await unitOfWork.Save(aggregateRoot);
 
         //Assert
         var reTries = 10;
         while (true)
         {
-            var testAggregateRoot = await db.TestAggregateRoots.AsNoTracking().FirstAsync(x => x.Id == primaryKey);
+            var testAggregateRoot = await db.TestAggregateRoots
+                .AsNoTracking()
+                .FirstAsync(x => x.Id == primaryKey);
             if (!string.IsNullOrWhiteSpace(testAggregateRoot.Title))
             {
                 Assert.True(testAggregateRoot.Index == 4);
