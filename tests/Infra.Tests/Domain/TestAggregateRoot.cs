@@ -11,7 +11,7 @@ public class TestAggregateRoot : AggregateRoot
 
     public TestAggregateRoot(int primaryKey)
     {
-        TestAggregateRootId = primaryKey;
+        this.TestAggregateRootId = primaryKey;
         this.Id = GuidGenerator.NewGuid();
         this.CreateDate = DateTime.Now;
     }
