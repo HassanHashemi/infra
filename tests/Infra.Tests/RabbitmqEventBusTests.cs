@@ -15,6 +15,7 @@ public class RabbitmqEventBusTests
 		var provider = new ContainerBuilder()
             .AddLoggingInternal()
 			.AddRabbitmqEventBusInternal()
+            .AddTestResultStorageInternal()
 			.Build();
 
 		var bus = provider.Resolve<IEventBus>();
