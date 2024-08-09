@@ -14,6 +14,7 @@ public class KafkaEventBusTests
 		var provider = new ContainerBuilder()
             .AddLoggingInternal()
 			.AddKafkaEventBusInternal()
+            .AddTestResultStorageInternal()
 			.Build();
 
 		var bus = provider.Resolve<IEventBus>();
