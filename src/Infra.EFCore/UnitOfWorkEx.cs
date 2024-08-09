@@ -6,9 +6,19 @@ namespace Infra.EFCore
     {
         public static IGenericRepository<T> Repo<T>(this IUnitOfWork uow) where T : class
         {
-            if (!(uow is EfUnitOfWork efUow))
+            int maxUnwrappTry = 10;
+
+            while (uow.GetType() != typeof(EfUnitOfWork) && maxUnwrappTry > 0)
             {
-                throw new InvalidOperationException("uow must be EfUnitOfWork");
+                uow = uow.Unwrap();
+                maxUnwrappTry--;
+            }
+
+            var efUow = uow as EfUnitOfWork;
+
+            if (efUow is null)
+            {
+                throw new InvalidOperationException("EfUnitOfWork not found");
             }
 
             return efUow.GenericRepo<T>();

@@ -130,5 +130,10 @@ namespace Infra.MongoDB
         {
             throw new NotSupportedException("Deleting from mongo is not supported right now.");
         }
+
+        public IUnitOfWork Unwrap()
+        {
+            return null;
+        }
     }
 }
