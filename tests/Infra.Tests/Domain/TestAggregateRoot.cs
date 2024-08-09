@@ -8,16 +8,12 @@ public class TestAggregateRoot : AggregateRoot
     private TestAggregateRoot()
     {
     }
-
-    public TestAggregateRoot(int primaryKey)
+    
+    public TestAggregateRoot(Guid id)
     {
-        this.TestAggregateRootId = primaryKey;
-        this.Id = GuidGenerator.NewGuid();
+        this.Id = id;
         this.CreateDate = DateTime.Now;
     }
-
-    [Key]
-    public long TestAggregateRootId { get; private set; }
 
     [MaxLength(500)]
     public string Title { get; private set; }

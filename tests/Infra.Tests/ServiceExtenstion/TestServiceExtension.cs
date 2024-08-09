@@ -161,19 +161,27 @@ internal static class TestServiceExtension
 			typeof(TestEvent).Assembly
 		};
 
-		builder.AddRabbitmqInternal(
-			p =>
-			{
-				p.Host = "localhost";
-				p.UserName = "rabbitmq";
-				p.Password = "rabbitmq";
-				p.VirtualHost = "/";
-			},
-			c =>
-			{
-				c.PreMessageHandlingHandler = (provider, @event, headers) => ValueTask.CompletedTask;
-				c.EventAssemblies = new[] { typeof(TestEvent).Assembly };
-			});
+		var connectionStringParts = Configuration
+            .GetConnectionString("Rabbitmq")
+            .Split(",");
+
+        builder.AddRabbitmqInternal(
+            p =>
+            {
+                p.Host = connectionStringParts[0];
+                p.UserName = connectionStringParts.Length > 1
+                    ? connectionStringParts[1].Replace("username=", "")
+                    : null;
+                p.Password = connectionStringParts.Length > 1
+                    ? connectionStringParts[2].Replace("password=", "")
+                    : null;
+                p.VirtualHost = "/";
+            },
+            c =>
+            {
+                c.PreMessageHandlingHandler = (provider, @event, headers) => ValueTask.CompletedTask;
+                c.EventAssemblies = new[] { typeof(TestEvent).Assembly };
+            });
 
 		builder.AddSyncEventHandlers(scannedAssemblies);
 

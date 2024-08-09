@@ -15,8 +15,8 @@ public class TestDbContext : DbContext
     {
         modelBuilder.Entity<TestAggregateRoot>().Ignore(p => p.UncommittedChanges);
         modelBuilder.Entity<TestAggregateRoot>().Ignore(p => p.Version);
-        modelBuilder.Entity<TestAggregateRoot>().HasKey(p => p.TestAggregateRootId);
-        modelBuilder.Entity<TestAggregateRoot>().HasIndex(p => p.TestAggregateRootId).IsUnique();
+        modelBuilder.Entity<TestAggregateRoot>().HasKey(p => p.Id);
+        modelBuilder.Entity<TestAggregateRoot>().HasIndex(p => p.Id).IsUnique();
 
         base.OnModelCreating(modelBuilder);
     }

@@ -11,7 +11,7 @@ public class UnitOfWorkTests
     [Fact]
     public async Task DomainEvent_WhenAggregateRootSaved_ShouldUpdateAggregateRootWithDomainEvent()
     {
-        int primaryKey = 1;
+        Guid primaryKey = GuidGenerator.NewGuid();
         //Arrange
         var provider = new ContainerBuilder()
             .AddLoggingInternal()
@@ -23,12 +23,12 @@ public class UnitOfWorkTests
         var db = provider.Resolve<TestDbContext>();
         db.TestAggregateRoots.Add(new TestAggregateRoot(primaryKey));
         await db.SaveChangesAsync();
-       
+
         //Act
         var unitOfWork = provider.Resolve<IUnitOfWork>();
         var aggregateRoot = await unitOfWork
             .Repo<TestAggregateRoot>()
-            .FirstAsync(x => x.TestAggregateRootId == primaryKey);
+            .FirstAsync(x => x.Id == primaryKey);
         aggregateRoot.UpdateInfo("test", 1);
         await unitOfWork.Save(aggregateRoot);
 
@@ -38,7 +38,7 @@ public class UnitOfWorkTests
         {
             var testAggregateRoot = await db.TestAggregateRoots
                 .AsNoTracking()
-                .FirstAsync(x => x.TestAggregateRootId == primaryKey);
+                .FirstAsync(x => x.Id == primaryKey);
             if (!string.IsNullOrWhiteSpace(testAggregateRoot.Title))
             {
                 Assert.True(testAggregateRoot.Index == 1);
@@ -58,7 +58,7 @@ public class UnitOfWorkTests
     [Fact]
     public async Task DomainEvent_WhenAggregateRootDeleted_ShouldDeleteAggregateRoot()
     {
-        int primaryKey = 2;
+        Guid primaryKey = GuidGenerator.NewGuid();
         //Arrange
         var provider = new ContainerBuilder()
             .AddLoggingInternal()
@@ -75,20 +75,21 @@ public class UnitOfWorkTests
         var unitOfWork = provider.Resolve<IUnitOfWork>();
         var aggregateRoot = await unitOfWork
             .Repo<TestAggregateRoot>()
-            .FirstAsync(x => x.TestAggregateRootId == primaryKey);
+            .FirstAsync(x => x.Id == primaryKey);
         aggregateRoot.UpdateInfo("test", 1);
         await unitOfWork.Delete(aggregateRoot);
 
         //Assert
-        var testAggregateRoot = await db.TestAggregateRoots
+        var deletedAggregateRootExist = await db.TestAggregateRoots
             .AsNoTracking()
-            .FirstAsync(x => x.TestAggregateRootId == primaryKey);
-        Assert.True(testAggregateRoot == null);
+            .AnyAsync(a=>a.Id==primaryKey);
+        Assert.False(deletedAggregateRootExist);
     }
 
     [Fact]
     public async Task KafkaDomainEventWithMustPropagate_WhenAggregateRootSaved_ShouldHandleIntegrationEvent()
     {
+        Guid primaryKey = GuidGenerator.NewGuid();
         //Arrange
         var provider = new ContainerBuilder()
             .AddLoggingInternal()
@@ -98,12 +99,12 @@ public class UnitOfWorkTests
             .Build();
 
         var db = provider.Resolve<TestDbContext>();
-        db.TestAggregateRoots.Add(new TestAggregateRoot(1));
+        db.TestAggregateRoots.Add(new TestAggregateRoot(primaryKey));
         await db.SaveChangesAsync();
 
         //Act
         var unitOfWork = provider.Resolve<IUnitOfWork>();
-        var aggregateRoot = await unitOfWork.Repo<TestAggregateRoot>().FirstAsync(x => x.TestAggregateRootId == 3);
+        var aggregateRoot = await unitOfWork.Repo<TestAggregateRoot>().FirstAsync(x => x.Id == primaryKey);
         aggregateRoot.UpdateInfoWithMustPropogate("test", 3);
         await unitOfWork.Save(aggregateRoot);
 
@@ -111,7 +112,7 @@ public class UnitOfWorkTests
         var reTries = 10;
         while (true)
         {
-            var testAggregateRoot = await db.TestAggregateRoots.AsNoTracking().FirstAsync(x => x.TestAggregateRootId == 3);
+            var testAggregateRoot = await db.TestAggregateRoots.AsNoTracking().FirstAsync(x => x.Id == primaryKey);
             if (!string.IsNullOrWhiteSpace(testAggregateRoot.Title))
             {
                 Assert.True(testAggregateRoot.Index == 3);
@@ -131,6 +132,7 @@ public class UnitOfWorkTests
     [Fact]
     public async Task RabbitmqDomainEventWithMustPropagate_WhenAggregateRootSaved_ShouldHandleIntegrationEvent()
     {
+        Guid primaryKey = GuidGenerator.NewGuid();
         //Arrange
         var provider = new ContainerBuilder()
             .AddLoggingInternal()
@@ -140,12 +142,12 @@ public class UnitOfWorkTests
             .Build();
 
         var db = provider.Resolve<TestDbContext>();
-        db.TestAggregateRoots.Add(new TestAggregateRoot(1));
+        db.TestAggregateRoots.Add(new TestAggregateRoot(primaryKey));
         await db.SaveChangesAsync();
 
         //Act
         var unitOfWork = provider.Resolve<IUnitOfWork>();
-        var aggregateRoot = await unitOfWork.Repo<TestAggregateRoot>().FirstAsync(x => x.TestAggregateRootId == 4);
+        var aggregateRoot = await unitOfWork.Repo<TestAggregateRoot>().FirstAsync(x => x.Id == primaryKey);
         aggregateRoot.UpdateInfoWithMustPropogate("test", 4);
         await unitOfWork.Save(aggregateRoot);
 
@@ -153,7 +155,7 @@ public class UnitOfWorkTests
         var reTries = 10;
         while (true)
         {
-            var testAggregateRoot = await db.TestAggregateRoots.AsNoTracking().FirstAsync(x => x.TestAggregateRootId == 4);
+            var testAggregateRoot = await db.TestAggregateRoots.AsNoTracking().FirstAsync(x => x.Id == primaryKey);
             if (!string.IsNullOrWhiteSpace(testAggregateRoot.Title))
             {
                 Assert.True(testAggregateRoot.Index == 4);

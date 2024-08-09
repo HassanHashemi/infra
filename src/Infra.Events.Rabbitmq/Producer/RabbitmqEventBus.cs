@@ -53,7 +53,7 @@ public class RabbitmqEventBus : IEventBus
 
                 var properties = channel.CreateBasicProperties();
                 properties.Type = typeof(TEvent).FullName;
-                properties.Headers = headers.ToDictionary(x => x.Key, y => (object)y.Value);
+                properties.Headers = headers?.ToDictionary(x => x.Key, y => (object)y.Value);
 
                 channel.ExchangeDeclare(
                     exchange: queueAttribute.ExchangeName, 
