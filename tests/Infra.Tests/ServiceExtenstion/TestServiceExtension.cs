@@ -181,10 +181,10 @@ internal static class TestServiceExtension
             {
                 c.PreMessageHandlingHandler = (provider, @event, headers) => ValueTask.CompletedTask;
                 c.EventAssemblies = new[] { typeof(TestEvent).Assembly };
+                c.ConsumerGroupId = "Infra.Tests";
             });
 
 		builder.AddSyncEventHandlers(scannedAssemblies);
-
 		return builder;
 	}
 }

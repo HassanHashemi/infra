@@ -99,7 +99,7 @@ public class RabbitMqConsumerService : IDisposable
 
             var @event = _serializer.Deserialize<Event>(payloadString);
 
-            var headers = properties.Headers.ToDictionary(x => x.Key, y => (string)y.Value);
+            var headers = properties.Headers?.ToDictionary(x => x.Key, y => (string)y.Value);
 
             //Invoke event handler
             await _handlerFactory.Invoke(@event.EventName ?? properties.Type, payloadString, headers);
