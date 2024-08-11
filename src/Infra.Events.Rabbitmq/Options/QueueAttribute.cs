@@ -24,14 +24,13 @@ public class QueueAttribute : Attribute
     }
 
     /// <summary>
-    /// Warning: if you want set
-    /// RoutingKey, set proper ExchangeType !
+    /// Warning: if you want set RoutingKey, set proper ExchangeType!
     /// </summary>
     /// <param name="queueName"></param>
     /// <param name="exchangeName"></param>
     /// <param name="routingKey"></param>
     /// <param name="exchangeType"></param>
-    public QueueAttribute(string queueName, string exchangeName, string routingKey, ExchangeType exchangeType)
+    public QueueAttribute(string queueName, string exchangeName, ExchangeType exchangeType, string routingKey = null)
     {
         Guard.NotNullOrEmpty(queueName, nameof(queueName));
         Guard.NotNullOrEmpty(exchangeName, nameof(exchangeName));
