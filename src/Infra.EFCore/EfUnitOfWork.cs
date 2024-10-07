@@ -4,7 +4,6 @@ using Infra.Events;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -40,6 +39,7 @@ namespace Infra.EFCore
         }
 
         public DbContext Context { get; }
+
         public IGenericRepository<T> GenericRepo<T>() where T : class => new EfGenericRepo<T>(Context);
 
         private async Task DispatchEvents(Event item)
@@ -115,5 +115,7 @@ namespace Infra.EFCore
 
             root.MarkChangesAsCommitted();
         }
+
+        public IUnitOfWork Unwrap() => null;
     }
 }
