@@ -1,9 +1,10 @@
-﻿using Autofac;
-using Infra.Queries;
-using Microsoft.Extensions.Options;
-using System;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Autofac;
+using Infra.Commands;
+using Infra.Queries;
+using Microsoft.Extensions.Options;
 
 namespace Infra.Commands
 {

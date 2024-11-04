@@ -54,7 +54,7 @@ public class RabbitMqConsumerService : IDisposable
         {
             _logger.LogInformation($"Consuming on queue" + string.Join("\n",
                 consumerConfig.Transports.Select(x =>
-                    $"Queue:{_consumerConfig.ConsumerGroupId}.{x.queueName} ,Exchange:{x.exchange}")));
+                    $"Queue:{_consumerConfig.ConsumerGroupId}.{x.QueueName} ,Exchange:{x.ExchangeName}")));
         }
     }
 
@@ -64,22 +64,23 @@ public class RabbitMqConsumerService : IDisposable
         {
             foreach (var assembly in _consumerConfig.Transports)
             {
-                var assemblyQueueName = $"{_consumerConfig.ConsumerGroupId}.{assembly.queueName}";
+                //Each microservice should have their own queues
+                var queueName = $"{_consumerConfig.ConsumerGroupId}.{assembly.QueueName}";
 
-                _channel.ExchangeDeclare(exchange: assembly.exchange, type: assembly.exchangeType.ToString().ToLower(), durable: true, autoDelete: false);
+                _channel.ExchangeDeclare(assembly.ExchangeName, assembly.ExchangeType.ToString().ToLower(), durable: true, autoDelete: false);
 
-                _channel.QueueDeclare(assemblyQueueName, durable: true, exclusive: false, autoDelete: false, null);
+                _channel.QueueDeclare(queueName, durable: true, exclusive: false, autoDelete: false, null);
 
-                _channel.QueueBind(queue: assemblyQueueName, exchange: assembly.exchange, routingKey: string.Empty);
+                _channel.QueueBind(queueName, assembly.ExchangeName, assembly.RoutingKey);
 
 
                 var consumer = new AsyncEventingBasicConsumer(_channel);
                 consumer.Received += (_, eventArgs) =>
                 {
-                    Receive(eventArgs.Body, _channel, eventArgs.DeliveryTag);
+                    Receive(eventArgs.Body, _channel, eventArgs.DeliveryTag, eventArgs.BasicProperties);
                     return Task.CompletedTask;
                 };
-                _channel.BasicConsume(assemblyQueueName, autoAck: false, consumer);
+                _channel.BasicConsume(queueName, autoAck: false, consumer);
                 await Task.CompletedTask;
             }
         }
@@ -90,7 +91,7 @@ public class RabbitMqConsumerService : IDisposable
         }
     }
 
-    private async void Receive(ReadOnlyMemory<byte> eventArgs, IModel channel, ulong eventArgsDeliveryTag)
+    private async void Receive(ReadOnlyMemory<byte> eventArgs, IModel channel, ulong eventArgsDeliveryTag, IBasicProperties properties)
     {
         try
         {
@@ -98,8 +99,10 @@ public class RabbitMqConsumerService : IDisposable
 
             var @event = _serializer.Deserialize<Event>(payloadString);
 
+            var headers = properties.Headers?.ToDictionary(x => x.Key, y => (string)y.Value);
+
             //Invoke event handler
-            await _handlerFactory.Invoke(@event.EventName, payloadString, new Dictionary<string, string>());
+            await _handlerFactory.Invoke(@event.EventName ?? properties.Type, payloadString, headers);
 
             //Send ACK to channel
             channel.BasicAck(eventArgsDeliveryTag, multiple: false);
