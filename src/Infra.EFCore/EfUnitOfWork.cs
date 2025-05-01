@@ -4,6 +4,7 @@ using Infra.Events;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -116,6 +117,9 @@ namespace Infra.EFCore
             root.MarkChangesAsCommitted();
         }
 
-        public IUnitOfWork Unwrap() => null;
+        public IUnitOfWork Unwrap()
+        {
+            return this;
+        }
     }
 }
