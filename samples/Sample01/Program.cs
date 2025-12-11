@@ -210,6 +210,7 @@ namespace Sample01
             services.Configure<QueryProcessorOptions>(o => o.EndServiceKey = "4");
             services.Configure<CommandProcessorOptions>(o => o.JsonSerializer = new TestSerializer());
             services.AddDistributedMemoryCache();
+            services.AddMemoryCache();
             var builder = new ContainerBuilder();
             builder.Populate(services);
             builder.AddCommandQueryInternal(typeof(Program).Assembly);

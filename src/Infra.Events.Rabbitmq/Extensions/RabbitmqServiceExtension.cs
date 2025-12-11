@@ -86,7 +86,7 @@ public static class RabbitmqServiceExtension
                 continue;
             }
 
-            config.Transports.Add(queueAttribute);
+            config.Transports.Add(queueAttribute ?? new QueueAttribute(queueName, exchangeName));
         }
     }
 }

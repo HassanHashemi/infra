@@ -12,7 +12,10 @@ namespace Infra.Events
         /// <param name="containerBuilder"></param>
         public static void AddSyncEventBus(this ContainerBuilder containerBuilder)
         {
-            containerBuilder.RegisterType<SyncEventBus>().As<IEventBus>().SingleInstance();
+            containerBuilder
+                .RegisterType<SyncEventBus>()
+                .As<IEventBus>()
+                .SingleInstance();
         }
 
         public static void AddSyncEventHandlers(this ContainerBuilder containerBuilder, params Assembly[] assemblies)

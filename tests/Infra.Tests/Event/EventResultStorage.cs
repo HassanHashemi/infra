@@ -1,8 +1,7 @@
-﻿namespace Infra.Tests.Event
+namespace Infra.Tests;
+
+public class EventResultStorage
 {
-	public static class EventResultStorage
-	{
-		public static int InternalEventResultHasBeenSet { get; set; }
-		public static int IntegrationEventResultHasBeenSet { get; set; }
-	}
+    public int InternalEventResultHasBeenSet { get; set; }
+    public int IntegrationEventResultHasBeenSet { get; set; }
 }

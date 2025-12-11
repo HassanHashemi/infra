@@ -1,22 +1,28 @@
 ﻿using Infra.Events;
 using Infra.Events.Kafka;
 
-namespace Infra.Tests.Event
-{
-	public class TestEventHandler :
-		IEventHandler<TestEvent>,
-		IMessageHandler<TestEvent>
-	{
-		public Task Handle(TestEvent @event, Dictionary<string, string> headers)
-		{
-			EventResultStorage.IntegrationEventResultHasBeenSet++;
-			return Task.CompletedTask;
-		}
+namespace Infra.Tests.Event;
 
-		public Task HandleEvent(TestEvent @event)
-		{
-			EventResultStorage.InternalEventResultHasBeenSet++;
-			return Task.CompletedTask;
-		}
-	}
+public class TestEventHandler :
+    IEventHandler<TestEvent>,
+    IMessageHandler<TestEvent>
+{
+    private readonly EventResultStorage _storage;
+
+    public TestEventHandler(EventResultStorage storage)
+    {
+        _storage = storage;
+    }
+
+    public Task Handle(TestEvent @event, Dictionary<string, string> headers)
+    {
+        _storage.IntegrationEventResultHasBeenSet++;
+        return Task.CompletedTask;
+    }
+
+    public Task HandleEvent(TestEvent @event)
+    {
+        _storage.InternalEventResultHasBeenSet++;
+        return Task.CompletedTask;
+    }
 }

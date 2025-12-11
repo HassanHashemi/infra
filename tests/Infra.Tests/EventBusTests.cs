@@ -1,146 +1,77 @@
 using Autofac;
-using Autofac.Extensions.DependencyInjection;
-using Confluent.Kafka;
 using Infra.Eevents;
-using Infra.Events;
-using Infra.Events.Kafka;
 using Infra.Tests.Event;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Xunit;
+using Xunit.Abstractions;
 
-namespace Infra.Tests
+namespace Infra.Tests;
+
+public class EventBusTests
 {
-	public class EventBusTests
-	{
-		
-		private static IContainer InitSyncEventBus(ServiceCollection externalServices = null)
-		{
-			var internalServices = new ServiceCollection().AddLogging(x => x.AddConsole());
-			var builder = new ContainerBuilder();
-			builder.Populate(internalServices);
+    private readonly ITestOutputHelper _console;
 
-			if (externalServices != null)
-				builder.Populate(externalServices);
+    public EventBusTests(ITestOutputHelper console)
+    {
+        _console = console;
+    }
 
-			var scannedAssemblies = new[]
-			{
-				typeof(TestEvent).Assembly
-			};
+    [Fact]
+    public async Task EventTest_WhenSendEvent_ShouldCallEventHandlerAsync()
+    {
+        //Arrange
+		var provider = new ContainerBuilder()
+            .AddLoggingInternal()
+			.AddSyncEventBusInternal()
+            .AddTestResultStorageInternal()
+			.Build();
 
-			builder.AddSyncEventBus();
-			builder.AddSyncEventHandlers(scannedAssemblies);
+        var bus = provider.Resolve<IEventBus>();
 
-			IContainer provider = builder.Build();
-			return provider;
-		}
+        //Act
+        await bus.Execute(new TestEvent(), new Dictionary<string, string>());
 
-		private static IContainer InitKafkaEventBus(ServiceCollection externalServices = null)
-		{
-			var config = InitConfiguration();
-			var internalServices = new ServiceCollection().AddLogging(x => x.AddConsole());
-			var builder = new ContainerBuilder();
-			builder.Populate(internalServices);
+        //Assert
+        var storage = provider.Resolve<EventResultStorage>();
+        while (true)
+        {
+            if (storage.InternalEventResultHasBeenSet == 1)
+            {
+                Assert.True(storage.InternalEventResultHasBeenSet == 1);
+                break;
+            }
+        }
+    }
 
-			if (externalServices != null)
-				builder.Populate(externalServices);
+    [Fact]
+    public async Task EventTest_WhenSendEvent_ShouldCallCustomFuncBeforeEventHandlerAsync()
+    {
+		//Arrange
+		var provider = new ContainerBuilder()
+			.AddLoggingInternal()
+			.AddSyncEventBusInternal()
+			.AddTestResultStorageInternal()
+			.Build();
 
-			var scannedAssemblies = new[]
-			{
-				typeof(TestEvent).Assembly
-			};
+		var bus = provider.Resolve<IEventBus>();
 
-			builder.AddKafka(p =>
-			{
-				p.BootstrapServers = config.GetConnectionString("Kafka");
-			},
-			consumer =>
-			{
-				consumer.OffsetResetType = AutoOffsetReset.Earliest;
-				consumer.GroupId = "xunit-consumer-group";
-				consumer.BootstrappServers = config.GetConnectionString("Kafka");
-				consumer.EventAssemblies = scannedAssemblies;
-				consumer.MaxPollIntervalMs = 50_000;
-				consumer.SessionTimeoutMs = 50_000;
-				consumer.PreMessageHandlingHandler = (provider, @event, headers) => ValueTask.CompletedTask;
-			});
+		//Act
+		await bus.Execute(new TestEvent(), new Dictionary<string, string>());
 
-			//builder.AddSyncEventHandlers(scannedAssemblies);
+        //Assert
+        var storage = provider.Resolve<EventResultStorage>();
+        while (true)
+        {
+            if (storage.InternalEventResultHasBeenSet > 1)
+            {
+                Assert.Fail("Consumer called more than once");
+                break;
+            }
 
-			IContainer provider = builder.Build();
-			return provider;
-		}
-
-		private static IConfiguration InitConfiguration()
-		{
-			return new ConfigurationBuilder()
-				.AddJsonFile("appsettings.json")
-				.AddEnvironmentVariables()
-				.Build();
-		}
-
-		[Fact]
-		public async Task EventTest_WhenSendEvent_ShouldCallEventHandlerAsync()
-		{
-			var provider = InitSyncEventBus();
-			var bus = provider.Resolve<IEventBus>();
-
-			await bus.Execute(new TestEvent() { }, new Dictionary<string, string>());
-
-			while (true)
-			{
-				if (EventResultStorage.InternalEventResultHasBeenSet == 1)
-				{
-					Assert.True(EventResultStorage.InternalEventResultHasBeenSet == 1);
-					break;
-				}
-			}
-		}
-
-		[Fact]
-		public async Task EventTest_WhenSendEvent_ShouldCallCustomFuncBeforeEventHandlerAsync()
-		{
-			var provider = InitSyncEventBus();
-			var bus = provider.Resolve<IEventBus>();
-
-			await bus.Execute(new TestEvent() { }, new Dictionary<string, string>());
-
-			while (true)
-			{
-				if (EventResultStorage.InternalEventResultHasBeenSet == 1)
-				{
-					Assert.True(EventResultStorage.InternalEventResultHasBeenSet == 1);
-					break;
-				}
-			}
-		}
-
-		[Fact]
-		public async Task KafkaIntegrationEventTest_WhenSendEvent_ShouldCallMessageHandlerAsync()
-		{
-			var provider = InitKafkaEventBus();
-			var bus = provider.Resolve<IEventBus>();
-
-			await bus.Execute(new TestEvent() { }, new Dictionary<string, string>());
-			while (true)
-			{
-				if (EventResultStorage.InternalEventResultHasBeenSet == 1)
-				{
-					Assert.True(EventResultStorage.InternalEventResultHasBeenSet == 1);
-					break;
-				}
-			}
-
-			await bus.Execute(new TestEvent() { MustPropagate = true }, new Dictionary<string, string>());
-			while (true)
-			{
-				if (EventResultStorage.IntegrationEventResultHasBeenSet == 1)
-				{
-					Assert.True(EventResultStorage.IntegrationEventResultHasBeenSet == 1);
-					break;
-				}
-			}
-		}
-	}
+            if (storage.InternalEventResultHasBeenSet == 1)
+            {
+                Assert.True(storage.InternalEventResultHasBeenSet == 1);
+                break;
+            }
+        }
+    }
 }

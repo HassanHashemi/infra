@@ -2,217 +2,203 @@ using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Domain;
 using Infra.Commands;
-using Infra.Common.Decorators;
 using Infra.Queries;
 using Infra.Tests.Command;
 using Infra.Tests.Query;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Xunit;
 
-namespace Infra.Tests
+namespace Infra.Tests;
+
+public class CommandQueriesTests
 {
-	public class CommandQueriesTests
+	private static IHostBuilder CreateHostBuilder(string[] args) =>
+		Host.CreateDefaultBuilder(args)
+			.UseServiceProviderFactory(new AutofacServiceProviderFactory())
+		.ConfigureContainer<ContainerBuilder>(builder =>
+		{
+		});
+
+	[Fact]
+	public async Task CommandTest_WhenSendCommand_ShouldCallCommandHandlerAsync()
 	{
-		private static IHostBuilder CreateHostBuilder(string[] args) =>
-			Host.CreateDefaultBuilder(args)
-				.UseServiceProviderFactory(new AutofacServiceProviderFactory())
-			.ConfigureContainer<ContainerBuilder>(builder =>
+		//Arrange
+		var provider = new ContainerBuilder()
+			.AddLoggingInternal()
+			.AddCommandQueryInternal()
+			.Build();
+
+		var processor = provider.Resolve<ICommandProcessor>();
+
+		var result = await processor.ExecuteAsync<TestCommand, string>(new TestCommand()
+		{
+			CommandParameter = "value"
+		});
+
+		Assert.True(!string.IsNullOrWhiteSpace(result));
+	}
+
+	[Fact]
+	public async Task CommandTest_WhenSendCommand_ShouldCallCommandValidatorThenHandlerAsync()
+	{
+		//Arrange
+		var provider = new ContainerBuilder()
+			.AddLoggingInternal()
+			.AddCommandQueryInternal()
+			.Build();
+
+		var processor = provider.Resolve<ICommandProcessor>();
+
+		var result = await processor.ExecuteAsync<TestCommand, string>(new TestCommand()
+		{
+			CommandParameter = "value"
+		});
+		Assert.True(!string.IsNullOrWhiteSpace(result));
+		try
+		{
+			var resultWithException = await processor.ExecuteAsync<TestCommand, string>(new TestCommand()
 			{
+				CommandParameter = null
 			});
-
-		private static IContainer InitContainer(ServiceCollection externalServices = null)
+		}
+		catch (DomainValidationException)
 		{
-			var internalServices = new ServiceCollection().AddLogging(x => x.AddConsole());
-			var builder = new ContainerBuilder();
-			builder.Populate(internalServices);
+			Assert.True(true);
+		}
+	}
 
-			if (externalServices != null)
-				builder.Populate(externalServices);
+	[Fact]
+	public async Task QueryTest_WhenSendQuery_ShouldCallQueryHandlerAsync()
+	{
+		//Arrange
+		var provider = new ContainerBuilder()
+			.AddLoggingInternal()
+			.AddMemoryCacheInternal()
+			.AddCommandQueryInternal()
+			.Build();
 
-			var scannedAssemblies = new[]
+		var processor = provider.Resolve<IQueryProcessor>();
+
+		var result = await processor.ExecuteAsync<string>(new TestQuery(), new CancellationToken());
+
+		Assert.True(!string.IsNullOrWhiteSpace(result));
+	}
+
+	[Fact]
+	public async Task CacheableQueryTest_WhenQueryCached_ShouldCallQueryHandler()
+	{
+		//Arrange
+		var provider = new ContainerBuilder()
+			.AddLoggingInternal()
+			.AddMemoryCacheInternal()
+			.AddCommandQueryInternal()
+			.Build();
+
+		var processor = provider.Resolve<IQueryProcessor>();
+
+		var result = await processor.ExecuteAsync(
+			new TestQueryCacheable()
 			{
-				typeof(TestCommand).Assembly
-			};
+			},
+			new CancellationToken());
+		Assert.True(result > 0);
 
-			builder.AddCommandQuery(scannedAssemblies: scannedAssemblies);
-
-			IContainer provider = builder.Build();
-			return provider;
-		}
-		
-		private static IConfiguration InitConfiguration()
-		{
-			return new ConfigurationBuilder()
-				.AddJsonFile("appsettings.json")
-				.AddEnvironmentVariables()
-				.Build();
-		}
-
-		[Fact]
-		public async Task CommandTest_WhenSendCommand_ShouldCallCommandHandlerAsync()
-		{
-			var provider = InitContainer();
-			var processor = provider.Resolve<ICommandProcessor>();
-
-			var result = await processor.ExecuteAsync<TestCommand, string>(new TestCommand()
+		var resultCacheable = await processor.ExecuteAsync(
+			new TestQueryCacheable()
 			{
-				CommandParameter = "value"
-			});
+				HandlerCallCount = result
+			},
+			new CancellationToken());
+		Assert.True(resultCacheable > 0);
+		Assert.True(resultCacheable == result);
+	}
 
-			Assert.True(!string.IsNullOrWhiteSpace(result));
-		}
+	[Fact]
+	public async Task CacheableQueryTest_WhenQueryCachedAndRevaldateRequested_ShouldCallQueryHandler()
+	{
+		//Arrange
+		var provider = new ContainerBuilder()
+			.AddLoggingInternal()
+			.AddMemoryCacheInternal()
+			.AddCommandQueryInternal()
+			.Build();
 
-		[Fact]
-		public async Task CommandTest_WhenSendCommand_ShouldCallCommandValidatorThenHandlerAsync()
-		{
-			var provider = InitContainer();
-			var processor = provider.Resolve<ICommandProcessor>();
+		var processor = provider.Resolve<IQueryProcessor>();
 
-			var result = await processor.ExecuteAsync<TestCommand, string>(new TestCommand()
+		var result = await processor.ExecuteAsync(
+			new TestQueryCacheable()
 			{
-				CommandParameter = "value"
-			});
-			Assert.True(!string.IsNullOrWhiteSpace(result));
-			try
+			},
+			new CancellationToken());
+		Assert.True(result > 0);
+
+		var resultRevalidated = await processor.ExecuteAsync(
+			new TestQueryCacheable()
 			{
-				var resultWithException = await processor.ExecuteAsync<TestCommand, string>(new TestCommand()
-				{
-					CommandParameter = null
-				});
-			}
-			catch (DomainValidationException)
+				ReValidate = true,
+				HandlerCallCount = result
+			},
+			new CancellationToken());
+		Assert.True(resultRevalidated > 0);
+		Assert.True(resultRevalidated > result);
+	}
+
+	[Fact]
+	public async Task RedisCacheableQueryTest_WhenQueryCached_ShouldCallQueryHandler()
+	{
+		//Arrange
+		var provider = new ContainerBuilder()
+			.AddLoggingInternal()
+			.AddRedisCacheInternal()
+			.AddCommandQueryInternal()
+			.Build();
+
+		var processor = provider.Resolve<IQueryProcessor>();
+
+		var result = await processor.ExecuteAsync(
+			new TestQueryCacheable()
 			{
-				Assert.True(true);
-			}
-		}
+			},
+			new CancellationToken());
+		Assert.True(result > 0);
 
-		[Fact]
-		public async Task QueryTest_WhenSendQuery_ShouldCallQueryHandlerAsync()
-		{
-			var services = new ServiceCollection();
-			services.AddMemoryCache();
-			services.AddDistributedMemoryCache();
-			var provider = InitContainer(services);
+		var resultCacheable = await processor.ExecuteAsync(
+			new TestQueryCacheable()
+			{
+				HandlerCallCount = result
+			},
+			new CancellationToken());
+		Assert.True(resultCacheable > 0);
+		Assert.True(resultCacheable == result);
+	}
 
-			var processor = provider.Resolve<IQueryProcessor>();
+	[Fact]
+	public async Task RedisCacheableQueryTest_WhenQueryCachedAndRevaldateRequested_ShouldCallQueryHandler()
+	{
+		//Arrange
+		var provider = new ContainerBuilder()
+			.AddLoggingInternal()
+			.AddRedisCacheInternal()
+			.AddCommandQueryInternal()
+			.Build();
 
-			var result = await processor.ExecuteAsync<string>(new TestQuery(), new CancellationToken());
+		var processor = provider.Resolve<IQueryProcessor>();
 
-			Assert.True(!string.IsNullOrWhiteSpace(result));
-		}
+		var result = await processor.ExecuteAsync(
+			new TestQueryCacheable()
+			{
+			},
+			new CancellationToken());
+		Assert.True(result > 0);
 
-		[Fact]
-		public async Task CacheableQueryTest_WhenQueryCached_ShouldNotCallQueryHandler()
-		{
-			var services = new ServiceCollection();
-			services.AddMemoryCache();
-			services.AddDistributedMemoryCache();
-
-			var provider = InitContainer(services);
-			var processor = provider.Resolve<IQueryProcessor>();
-
-			var result = await processor.ExecuteAsync(
-				new TestQueryCacheable()
-				{
-				},
-				new CancellationToken());
-			Assert.True(result > 0);
-
-			var resultCacheable = await processor.ExecuteAsync(
-				new TestQueryCacheable()
-				{
-					HandlerCallCount = result
-				},
-				new CancellationToken());
-			Assert.True(resultCacheable > 0);
-			Assert.True(resultCacheable == result);
-		}
-
-		[Fact]
-		public async Task CacheableQueryTest_WhenQueryCachedAndRevaldateRequested_ShouldCallQueryHandler()
-		{
-			var services = new ServiceCollection();
-			services.AddMemoryCache();
-			services.AddDistributedMemoryCache();
-
-			var provider = InitContainer(services);
-			var processor = provider.Resolve<IQueryProcessor>();
-
-			var result = await processor.ExecuteAsync(
-				new TestQueryCacheable()
-				{
-				},
-				new CancellationToken());
-			Assert.True(result > 0);
-
-			var resultRevalidated = await processor.ExecuteAsync(
-				new TestQueryCacheable()
-				{
-					ReValidate = true,
-					HandlerCallCount = result
-				},
-				new CancellationToken());
-			Assert.True(resultRevalidated > 0);
-			Assert.True(resultRevalidated > result);
-		}
-	
-		[Fact]
-		public async Task CacheableQueryTestWithRedisCache_WhenQueryCached_ShouldNotCallQueryHandler()
-		{
-			var configs = InitConfiguration();
-			var services = new ServiceCollection();
-			services.AddMemoryCache();
-			services.AddStackExchangeRedisCache(o => { o.Configuration = configs.GetConnectionString("Redis"); });
-			var provider = InitContainer(services);
-			var processor = provider.Resolve<IQueryProcessor>();
-
-			var result = await processor.ExecuteAsync(
-				new TestQueryCacheable()
-				{
-				},
-				new CancellationToken());
-			Assert.True(result > 0);
-
-			var resultCacheable = await processor.ExecuteAsync(
-				new TestQueryCacheable()
-				{
-					HandlerCallCount = result
-				},
-				new CancellationToken());
-			Assert.True(resultCacheable > 0);
-			Assert.True(resultCacheable == result);
-		}
-
-		[Fact]
-		public async Task CacheableQueryTestWithRedisCache_WhenQueryCachedAndRevaldateRequested_ShouldCallQueryHandler()
-		{
-			var configs = InitConfiguration();
-			var services = new ServiceCollection();
-			services.AddMemoryCache();
-			services.AddStackExchangeRedisCache(o => { o.Configuration = configs.GetConnectionString("Redis"); });
-
-			var provider = InitContainer(services);
-			var processor = provider.Resolve<IQueryProcessor>();
-
-			var result = await processor.ExecuteAsync(
-				new TestQueryCacheable()
-				{
-				},
-				new CancellationToken());
-			Assert.True(result > 0);
-
-			var resultRevalidated = await processor.ExecuteAsync(
-				new TestQueryCacheable()
-				{
-					ReValidate = true,
-					HandlerCallCount = result
-				},
-				new CancellationToken());
-			Assert.True(resultRevalidated > 0);
-			Assert.True(resultRevalidated > result);
-		}
+		var resultRevalidated = await processor.ExecuteAsync(
+			new TestQueryCacheable()
+			{
+				ReValidate = true,
+				HandlerCallCount = result
+			},
+			new CancellationToken());
+		Assert.True(resultRevalidated > 0);
+		Assert.True(resultRevalidated > result);
 	}
 }
