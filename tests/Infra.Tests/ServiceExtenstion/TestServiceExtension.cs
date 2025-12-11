@@ -19,149 +19,170 @@ namespace Infra.Tests;
 
 internal static class TestServiceExtension
 {
-	private static IConfiguration Configuration => new ConfigurationBuilder()
-		.AddJsonFile("appsettings.json")
-		.AddEnvironmentVariables()
-		.Build();
+    private static IConfiguration Configuration => new ConfigurationBuilder()
+        .AddJsonFile("appsettings.json")
+        .AddEnvironmentVariables()
+        .Build();
 
-	internal static ContainerBuilder AddLoggingInternal(this ContainerBuilder builder)
-	{
-		var services = new ServiceCollection().AddLogging(x => x.AddConsole());
-		builder.Populate(services);
-		return builder;
-	}
+    internal static ContainerBuilder AddLoggingInternal(this ContainerBuilder builder)
+    {
+        var services = new ServiceCollection().AddLogging(x => x.AddConsole());
+        builder.Populate(services);
+        return builder;
+    }
 
-	internal static ContainerBuilder AddMemoryCacheInternal(this ContainerBuilder builder)
-	{
-		var services = new ServiceCollection();
-		services
-			.AddMemoryCache()
-			.AddDistributedMemoryCache();
+    internal static ContainerBuilder AddMemoryCacheInternal(this ContainerBuilder builder)
+    {
+        var services = new ServiceCollection();
+        services
+            .AddMemoryCache()
+            .AddDistributedMemoryCache();
 
-		builder.Populate(services);
-		return builder;
-	}
+        builder.Populate(services);
+        return builder;
+    }
 
-	internal static ContainerBuilder AddRedisCacheInternal(this ContainerBuilder builder)
-	{
-		var services = new ServiceCollection();
-		services
-			.AddMemoryCache()
-			.AddStackExchangeRedisCache(o =>
-			{
-				o.Configuration = Configuration.GetConnectionString("Redis");
-			});
+    internal static ContainerBuilder AddRedisCacheInternal(this ContainerBuilder builder)
+    {
+        var services = new ServiceCollection();
+        services
+            .AddMemoryCache()
+            .AddStackExchangeRedisCache(o =>
+            {
+                o.Configuration = Configuration.GetConnectionString("Redis");
+            });
 
-		builder.Populate(services);
-		return builder;
-	}
+        builder.Populate(services);
+        return builder;
+    }
 
-	internal static ContainerBuilder AddDbContextInternal(this ContainerBuilder builder)
-	{
-		var services = new ServiceCollection();
+    internal static ContainerBuilder AddDbContextInternal(this ContainerBuilder builder)
+    {
+        var services = new ServiceCollection();
 
-		services.AddDbContext<TestDbContext>(options =>
-			options.UseInMemoryDatabase(databaseName: "TestDb"));
+        services.AddDbContext<TestDbContext>(options =>
+            options.UseInMemoryDatabase(databaseName: "TestDb"));
 
-		services.AddScoped<DbContext, TestDbContext>();
+        services.AddScoped<DbContext, TestDbContext>();
 
-		builder.Populate(services);
+        builder.Populate(services);
 
-		return builder;
-	}
+        return builder;
+    }
 
-	internal static ContainerBuilder AddTestResultStorageInternal(this ContainerBuilder builder)
-	{
-		var services = new ServiceCollection();
-		services.AddSingleton<EventResultStorage>();
+    internal static ContainerBuilder AddTestResultStorageInternal(this ContainerBuilder builder)
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<EventResultStorage>();
 
-		builder.Populate(services);
-		return builder;
-	}
+        builder.Populate(services);
+        return builder;
+    }
 
-	internal static ContainerBuilder AddUnitOfWorkInternal(this ContainerBuilder builder)
-	{
-		var scannedAssemblies = new[]
-		{
-			typeof(TestAggregateRootInfoUpdatedDomainEvent).Assembly
-		};
+    internal static ContainerBuilder AddUnitOfWorkInternal(this ContainerBuilder builder)
+    {
+        var scannedAssemblies = new[]
+        {
+            typeof(TestInfoUpdatedEvent).Assembly
+        };
 
-		builder.Register<IUnitOfWork>(context =>
-			{
-				var db = context.Resolve<DbContext>();
-				var logger = context.Resolve<ILogger<EfUnitOfWork>>();
-				var syncEventBus = context.Resolve<SyncEventBus>();
-				var eventBus = context.Resolve<IEventBus>();
+        builder.Register<IUnitOfWork>(context =>
+            {
+                var db = context.Resolve<DbContext>();
+                var logger = context.Resolve<ILogger<EfUnitOfWork>>();
+                var syncEventBus = context.Resolve<SyncEventBus>();
+                var eventBus = context.Resolve<IEventBus>();
 
-				return new EfUnitOfWork(db, eventBus, syncEventBus, logger);
-			})
-			.InstancePerLifetimeScope();
+                return new EfUnitOfWork(db, eventBus, syncEventBus, logger);
+            })
+            .InstancePerLifetimeScope();
 
-		builder.AddCommandQuery(scannedAssemblies: scannedAssemblies);
+        builder.AddCommandQuery(scannedAssemblies: scannedAssemblies);
 
-		return builder;
-	}
+        return builder;
+    }
 
-	internal static ContainerBuilder AddCommandQueryInternal(this ContainerBuilder builder)
-	{
-		var scannedAssemblies = new[]
-		{
-			typeof(TestCommand).Assembly
-		};
+    internal static ContainerBuilder AddUnitOfWorkLocalInternal(this ContainerBuilder builder)
+    {
+        var scannedAssemblies = new[]
+        {
+            typeof(TestInfoUpdatedEvent).Assembly
+        };
 
-		builder.AddCommandQuery(scannedAssemblies: scannedAssemblies);
+        builder.Register<IUnitOfWork>(context =>
+            {
+                var db = context.Resolve<DbContext>();
+                var logger = context.Resolve<ILogger<EfUnitOfWork>>();
+                var syncEventBus = context.Resolve<SyncEventBus>();
 
-		return builder;
-	}
+                return new EfUnitOfWork(db, syncEventBus, logger);
+            })
+            .InstancePerLifetimeScope();
 
-	internal static ContainerBuilder AddSyncEventBusInternal(this ContainerBuilder builder)
-	{
-		var scannedAssemblies = new[]
-		{
-			typeof(TestEvent).Assembly
-		};
+        builder.AddCommandQuery(scannedAssemblies: scannedAssemblies);
 
-		builder.AddSyncEventBus();
-		builder.AddSyncEventHandlers(scannedAssemblies);
+        return builder;
+    }
 
-		return builder;
-	}
+    internal static ContainerBuilder AddCommandQueryInternal(this ContainerBuilder builder)
+    {
+        var scannedAssemblies = new[]
+        {
+            typeof(TestCommand).Assembly
+        };
 
-	internal static ContainerBuilder AddKafkaEventBusInternal(this ContainerBuilder builder)
-	{
-		var scannedAssemblies = new[]
-		{
-			typeof(TestEvent).Assembly
-		};
+        builder.AddCommandQuery(scannedAssemblies: scannedAssemblies);
 
-		builder.AddKafka(
-			producer =>
-			{
-				producer.BootstrapServers = Configuration.GetConnectionString("Kafka");
-			},
-			consumer =>
-			{
-				consumer.OffsetResetType = AutoOffsetReset.Earliest;
-				consumer.GroupId = "xunit-consumer-group";
-				consumer.BootstrappServers = Configuration.GetConnectionString("Kafka");
-				consumer.EventAssemblies = scannedAssemblies;
-				consumer.MaxPollIntervalMs = 50_000;
-				consumer.SessionTimeoutMs = 50_000;
-				consumer.PreMessageHandlingHandler = (provider, @event, headers) => ValueTask.CompletedTask;
-			});
+        return builder;
+    }
 
-		builder.AddSyncEventHandlers(scannedAssemblies);
-		return builder;
-	}
+    internal static ContainerBuilder AddSyncEventBusInternal(this ContainerBuilder builder)
+    {
+        var scannedAssemblies = new[]
+        {
+            typeof(TestEvent).Assembly
+        };
 
-	internal static ContainerBuilder AddRabbitmqEventBusInternal(this ContainerBuilder builder)
-	{
-		var scannedAssemblies = new[]
-		{
-			typeof(TestEvent).Assembly
-		};
+        builder.AddSyncEventHandlers(scannedAssemblies);
 
-		var connectionStringParts = Configuration
+        return builder;
+    }
+
+    internal static ContainerBuilder AddKafkaEventBusInternal(this ContainerBuilder builder)
+    {
+        var scannedAssemblies = new[]
+        {
+            typeof(TestEvent).Assembly
+        };
+
+        builder.AddKafka(
+            producer =>
+            {
+                producer.BootstrapServers = Configuration.GetConnectionString("Kafka");
+            },
+            consumer =>
+            {
+                consumer.OffsetResetType = AutoOffsetReset.Earliest;
+                consumer.GroupId = "xunit-consumer-group";
+                consumer.BootstrappServers = Configuration.GetConnectionString("Kafka");
+                consumer.EventAssemblies = scannedAssemblies;
+                consumer.MaxPollIntervalMs = 50_000;
+                consumer.SessionTimeoutMs = 50_000;
+                consumer.PreMessageHandlingHandler = (provider, @event, headers) => ValueTask.CompletedTask;
+            });
+
+        builder.AddSyncEventHandlers(scannedAssemblies);
+        return builder;
+    }
+
+    internal static ContainerBuilder AddRabbitmqEventBusInternal(this ContainerBuilder builder)
+    {
+        var scannedAssemblies = new[]
+        {
+            typeof(TestEvent).Assembly
+        };
+
+        var connectionStringParts = Configuration
             .GetConnectionString("Rabbitmq")
             .Split(",");
 
@@ -184,7 +205,7 @@ internal static class TestServiceExtension
                 c.ConsumerGroupId = "Infra.Tests";
             });
 
-		builder.AddSyncEventHandlers(scannedAssemblies);
-		return builder;
-	}
+        builder.AddSyncEventHandlers(scannedAssemblies);
+        return builder;
+    }
 }

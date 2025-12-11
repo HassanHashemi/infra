@@ -11,7 +11,7 @@ public static class ContainerExtensions
     /// Instead of Kafka or Rabbitmq, you can register SyncEventBus as IEventBus (using C# internal events)  
     /// </summary>
     /// <param name="containerBuilder"></param>
-    public static void AddSyncEventBus(this ContainerBuilder containerBuilder)
+    public static ContainerBuilder AddSyncEventBus(this ContainerBuilder containerBuilder)
     {
         containerBuilder
             .RegisterType<SyncEventBus>()
@@ -22,9 +22,11 @@ public static class ContainerExtensions
             .RegisterType<BackgroundTaskInvoker>()
             .As<IBackgroundTaskInvoker>()
             .SingleInstance();
+
+        return containerBuilder;
     }
 
-    public static void AddSyncEventHandlers(this ContainerBuilder containerBuilder, params Assembly[] assemblies)
+    public static ContainerBuilder AddSyncEventHandlers(this ContainerBuilder containerBuilder, params Assembly[] assemblies)
     {
         containerBuilder
             .RegisterType<SyncEventBus>()
@@ -40,5 +42,7 @@ public static class ContainerExtensions
             .RegisterType<BackgroundTaskInvoker>()
             .As<IBackgroundTaskInvoker>()
             .SingleInstance();
+
+        return containerBuilder;
     }
 }

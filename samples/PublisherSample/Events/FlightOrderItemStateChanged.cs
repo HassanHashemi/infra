@@ -1,6 +1,6 @@
 ﻿using Infra.Events.Kafka;
 using Infra.Events.Rabbitmq;
-using News.Domain;
+using Domain;
 
 namespace Sample;
 

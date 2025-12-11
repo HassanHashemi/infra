@@ -22,31 +22,42 @@ public class SyncEventBus : IEventBus
 
     public async Task Execute<TEvent>(TEvent @event, Dictionary<string, string> _ = null, CancellationToken cancellationToken = default) where TEvent : Event
     {
+        var exceptions = new List<Exception>();
         var handlerType = typeof(IEventHandler<>).MakeGenericType(@event.GetType());
         var handlersType = typeof(IEnumerable<>).MakeGenericType(handlerType);
-        dynamic handlers = _container.ResolveKeyed("1", handlersType);
 
-        var exceptions = new List<Exception>();
-
-        foreach (var handlerItem in handlers)
+        if (@event.ForceAsync)
         {
-            try
+            _invoker.Execute(async rootScope =>
             {
-                if (handlerItem.RunInBackground)
+                await using var childScope = rootScope.BeginLifetimeScope();
+                dynamic handlers = childScope.ResolveKeyed("1", handlersType);
+                foreach (dynamic handlerItem in handlers)
                 {
-                    //Run in background (non-blocking)
-                    _invoker.Execute(
-                        handlerItem.HandleEvent((dynamic)@event));
+                    try
+                    {
+                        await handlerItem.HandleEvent.A((dynamic)@event);
+                    }
+                    catch (Exception ex)
+                    {
+                        exceptions.Add(ex);
+                    }
                 }
-                else
+            });
+        }
+        else
+        {
+            dynamic handlers = _container.ResolveKeyed("1", handlersType);
+            foreach (dynamic handlerItem in handlers)
+            {
+                try
                 {
-                    //Await until handler work done (blocking)
                     await handlerItem.HandleEvent((dynamic)@event);
                 }
-            }
-            catch (Exception ex)
-            {
-                exceptions.Add(ex);
+                catch (Exception ex)
+                {
+                    exceptions.Add(ex);
+                }
             }
         }
 
