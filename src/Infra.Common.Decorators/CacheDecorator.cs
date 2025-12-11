@@ -49,7 +49,7 @@ namespace Infra.Common.Decorators
                         options =>
                         {
                             options.AbsoluteExpiration = cache.AbsoluteExpiration;
-                            return _innerHandler.HandleAsync(parameters);
+                            return _innerHandler.HandleAsync(parameters, cts);
                         },
                         _serializer,
                         cts),
@@ -58,7 +58,7 @@ namespace Infra.Common.Decorators
                         options => 
                         {
                             options.AbsoluteExpiration = cache.AbsoluteExpiration;
-                            return _innerHandler.HandleAsync(parameters);
+                            return _innerHandler.HandleAsync(parameters, cts);
                         }),
                     _ => throw new NotSupportedException("Only memory and Redis are supported")
                 };
