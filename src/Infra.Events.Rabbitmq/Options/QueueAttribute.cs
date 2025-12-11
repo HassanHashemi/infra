@@ -1,4 +1,6 @@
-﻿namespace Infra.Events.Rabbitmq;
+﻿using System;
+
+namespace Infra.Events.Rabbitmq;
 
 public class QueueAttribute : Attribute
 {

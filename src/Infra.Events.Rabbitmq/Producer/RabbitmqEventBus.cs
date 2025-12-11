@@ -1,7 +1,12 @@
-﻿using Infra.Eevents;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Infra.Eevents;
 using RabbitMQ.Client;
 using System.Reflection;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Domain;
 using Infra.Serialization.Json;
 using Microsoft.Extensions.Logging;
