@@ -1,8 +1,8 @@
 ﻿using Infra.Events.Kafka;
 using Infra.Events.Rabbitmq;
-using News.Domain;
+using Domain;
 
-namespace Orders.Domain.Events
+namespace Sample01
 {
     [Topic(Name = "Ota.FlightOrderItem1")]
     [Queue(QueueName = "FlightOrderItemStateChanged", ExchangeName = "FlightOrderItemStateChanged")]

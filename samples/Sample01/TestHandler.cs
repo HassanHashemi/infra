@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Infra.Events.Kafka;
-using Orders.Domain.Events;
 
 namespace Sample01;
 

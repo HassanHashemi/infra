@@ -1,5 +1,6 @@
-﻿using News.Domain;
+﻿using Domain;
 using System;
+using Domain;
 
 namespace Sample01
 {
