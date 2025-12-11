@@ -7,6 +7,8 @@ public class TestEventHandler :
     IEventHandler<TestEvent>,
     IMessageHandler<TestEvent>
 {
+    public bool RunInBackground => true;
+
     private readonly EventResultStorage _storage;
 
     public TestEventHandler(EventResultStorage storage)
