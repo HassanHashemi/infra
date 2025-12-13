@@ -36,7 +36,7 @@ public class SyncEventBus : IEventBus
                 {
                     try
                     {
-                        await handlerItem.HandleEvent.A((dynamic)@event);
+                        await handlerItem.HandleEvent((dynamic)@event);
                     }
                     catch (Exception ex)
                     {

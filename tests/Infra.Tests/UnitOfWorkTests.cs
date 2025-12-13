@@ -179,6 +179,11 @@ public class UnitOfWorkTests
         }
     }
 
+    /// <summary>
+    /// <see cref="TestInfoUpdatedEvent"/>
+    /// <see cref="TestInfoUpdatedEventHandler"/>
+    /// </summary>
+    /// <returns></returns>
     [Fact]
     public async Task DomainEvent_WhenAggregateRootSaved_ShouldRunEventHandlerInBackground()
     {
