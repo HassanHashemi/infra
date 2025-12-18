@@ -1,10 +1,9 @@
 ﻿using Domain;
 using System.Threading.Tasks;
 
-namespace Infra.Events
+namespace Infra.Events;
+
+public interface IEventHandler<in T> where T : Event
 {
-    public interface IEventHandler<T> where T : Event
-    {
-        Task HandleEvent(T @event);
-    }
+    Task HandleEvent(T @event);
 }

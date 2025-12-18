@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFramework>net8.0</TargetFramework>
-		<Version>2.0.35</Version>
+		<Version>2.0.36</Version>
 		<PackageId>Infra.Common.Decorators</PackageId>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 	</PropertyGroup>

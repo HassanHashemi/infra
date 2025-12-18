@@ -426,8 +426,7 @@ public class OrderContactInfo : ValueObject<OrderContactInfo>
 ```
 
 
-#### Domain Event class
-
+### Domain Event 
 The **DomainEvent** class inherited from **Event** class, so you can handle DomainEvents just like Events everywhere you want.
 ```c#
 [Topic(Name = OrderTopics.ORDER)] //Optional attribute
@@ -455,6 +454,7 @@ public class OrderCreated : DomainEvent
 }
 ```
 
+
 #### Produce a Domain Event sample
 For producing domain events, you need read the **AggregateRoot** from database with **IUnitOfWork** which track AggregateRoot changes with events and raise all DomainEvents on **Save()** method.
 First you need to put this two methods in the AggregateRoot for raising an DomainEvent (for example OrderNoteCreated DomainEvent):
@@ -481,7 +481,23 @@ public class Order : AggregateRoot
 }
 ```
 
-Then inject IUnitOfWork interface in somewhere you want excecute the add or update command (usually in a CommandHandler), make your changes on AggregateRoot (or it's Entities and ValueObjects) and call the method you implemented above, then Save changes using IUnitOfWork, the DomainEvent(s) will raise after database changes commited successfully.
+
+
+#### Handle a Domain Event sample
+For each domain events in the AggregateRoot you should have a method with this prototype. the method name should be private void Apply(EVENT_TYPE @event) like this sample :
+```c#
+    private void Apply(OrderNoteCreated @event)
+    {
+        this.Notes ??= new List<OrderNote>();
+        this.Notes.Add(new OrderNote(@event.Text, @event.CreatorId));
+    }
+```
+After saving the AggregateRoot using IUnitOfWork (described in next step) the framework call this **Apply** method to apply changes on AggregateRoot according to the event.
+
+
+
+#### Using Domain Event sample
+First of all inject IUnitOfWork interface in somewhere you want excecute the change (add, update, delete) usually in a CommandHandler, make your changes on AggregateRoot (or it's Entities and ValueObjects) and call the method you implemented above, then Save changes using IUnitOfWork, the DomainEvent(s) will raise after database changes commited successfully.
 ```c#
 public class ChangeOrderItemStateCommandHandler : ICommandHandler<ChangeOrderItemStateCommand, ChangeOrderItemStateCommandResult>
 {
@@ -507,3 +523,18 @@ public class ChangeOrderItemStateCommandHandler : ICommandHandler<ChangeOrderIte
 }
 ```
 Note: Just AggregateRoots can expose methods and functionalities (Not Entities or ValueObjects), so AggregateRoots can raise DomainEvents (for noticing all handlers to it's internal changes).
+
+
+
+#### Raising Domain Event as Intergration Event on MessagingSystem (Kafka, Rabbitmq, ...)
+You can easily send domain event to the broker too. It will apply changes on the AggregateRoot and then publish the event on the broker (like kafka, rabbitmq, ...) using overriding this property as we mentioned before:
+```
+public class OrderCreated : DomainEvent
+{
+    ...
+
+    // MustPropagate = false: Send an internal event (C# event) and call internal event handlers (in currenct microservice)
+    // MustPropagate = true: Send an integration event (Broker event) and call all it's event handlers (in all microservices)
+    public override bool MustPropagate { get; set; } = true;
+}
+```

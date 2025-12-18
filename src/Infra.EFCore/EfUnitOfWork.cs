@@ -20,12 +20,29 @@ namespace Infra.EFCore
         {
         }
 
+        /// <summary>
+        /// UnitOfWork for internal event handlers
+        /// </summary>
+        /// <see cref="IEventHandler{T}"/>
+        /// <param name="context"></param>
+        /// <param name="syncEventBus"></param>
+        /// <param name="logger"></param>
         public EfUnitOfWork(
            DbContext context,
            SyncEventBus syncEventBus,
-           ILogger<EfUnitOfWork> logger) : this(context, null, syncEventBus, logger)
+           ILogger<EfUnitOfWork> logger) 
+            : this(context, null, syncEventBus, logger)
         {
         }
+
+        /// <summary>
+        /// UnitOfWork for Distributed event handlers
+        /// </summary>
+        /// <see cref="IEventHandler{T}"/>
+        /// <param name="context"></param>
+        /// <param name="eventBus"></param>
+        /// <param name="syncEventBus"></param>
+        /// <param name="logger"></param>
 
         public EfUnitOfWork(
             DbContext context,

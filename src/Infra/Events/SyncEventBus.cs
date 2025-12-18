@@ -1,31 +1,54 @@
 ﻿using Autofac;
 using Domain;
 using Infra.Eevents;
+using Infra.HostedServices;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Infra.Events
+namespace Infra.Events;
+
+public class SyncEventBus : IEventBus
 {
-    public class SyncEventBus : IEventBus
+    private readonly ILifetimeScope _container;
+    private readonly IBackgroundTaskInvoker _invoker;
+
+    public SyncEventBus(ILifetimeScope container, IBackgroundTaskInvoker invoker)
     {
-        private readonly ILifetimeScope _container;
+        _container = container;
+        _invoker = invoker;
+    }
 
-        public SyncEventBus(ILifetimeScope container)
+    public async Task Execute<TEvent>(TEvent @event, Dictionary<string, string> _ = null, CancellationToken cancellationToken = default) where TEvent : Event
+    {
+        var exceptions = new List<Exception>();
+        var handlerType = typeof(IEventHandler<>).MakeGenericType(@event.GetType());
+        var handlersType = typeof(IEnumerable<>).MakeGenericType(handlerType);
+
+        if (@event.ForceAsync)
         {
-            _container = container;
+            _invoker.Execute(async rootScope =>
+            {
+                await using var childScope = rootScope.BeginLifetimeScope();
+                dynamic handlers = childScope.ResolveKeyed("1", handlersType);
+                foreach (dynamic handlerItem in handlers)
+                {
+                    try
+                    {
+                        await handlerItem.HandleEvent((dynamic)@event);
+                    }
+                    catch (Exception ex)
+                    {
+                        exceptions.Add(ex);
+                    }
+                }
+            });
         }
-
-        public async Task Execute<TEvent>(TEvent @event, Dictionary<string, string> _ = null, CancellationToken cancellationToken = default) where TEvent : Event
+        else
         {
-            var handlerType = typeof(IEventHandler<>).MakeGenericType(@event.GetType());
-            var handlersType = typeof(IEnumerable<>).MakeGenericType(handlerType);
             dynamic handlers = _container.ResolveKeyed("1", handlersType);
-
-            var exceptions = new List<Exception>();
-
-            foreach (var handlerItem in handlers)
+            foreach (dynamic handlerItem in handlers)
             {
                 try
                 {
@@ -36,11 +59,11 @@ namespace Infra.Events
                     exceptions.Add(ex);
                 }
             }
+        }
 
-            if (exceptions.Count >= 1)
-            {
-                throw new AggregateException(exceptions);
-            }
+        if (exceptions.Count >= 1)
+        {
+            throw new AggregateException(exceptions);
         }
     }
 }

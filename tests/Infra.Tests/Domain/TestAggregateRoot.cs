@@ -24,7 +24,7 @@ public class TestAggregateRoot : AggregateRoot
     {
         Guard.NotNullOrEmpty(title, nameof(title));
 
-        var @event = new TestAggregateRootInfoUpdatedDomainEvent(this.Id, title, index)
+        var @event = new TestInfoUpdatedEvent(this.Id, title, index)
         {
             MustPropagate = mustPropagate,
             Timestamp = DateTime.Now
@@ -33,9 +33,9 @@ public class TestAggregateRoot : AggregateRoot
         ApplyChange(@event);
     }
 
-    private void Apply(TestAggregateRootInfoUpdatedDomainEvent domainEvent)
+    private void Apply(TestInfoUpdatedEvent @event)
     {
-        this.Index += domainEvent.Index;
-        this.Title = domainEvent.Title;
+        this.Index += @event.Index;
+        this.Title = @event.Title;
     }
 }
